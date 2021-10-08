@@ -1,20 +1,8 @@
 from typing import Any, Set, List, Type, Sequence
 
-from blocks.types import (
-    Block,
-    Event,
-    Source,
-    Processor,
-    AsyncSource,
-    AsyncProcessor,
-)
+from blocks.types import Block, Event, Source, Processor, AsyncSource, AsyncProcessor
 from blocks.logger import logger
-from blocks.annotations import (
-    AnnotationError,
-    _get_annots,
-    get_input_events_type,
-    get_output_events_type,
-)
+from blocks.annotations import AnnotationError, _get_annots, get_input_events_type, get_output_events_type
 
 EXCLUDED_EVENTS = [type(None)]
 
@@ -72,6 +60,7 @@ def validate_blocks(blocks: Sequence[Block], excluded_events: Sequence[Type[Even
     excl_set = set(excluded_events)
     for event in _useless_events(blocks, excl_set):
         logger.warning("{0} isn't processed".format(event))
+    # ToDo (tribunsky.kir): bad validation, doesn't find Batches on output
     for processor in _useless_receivers(blocks, excl_set):
         logger.warning('{0} is useless. There is no events generated for'.format(processor))
     for processor in _useless_producers(blocks, excl_set):

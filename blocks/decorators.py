@@ -1,13 +1,6 @@
 from typing import Any, Type, Callable, Optional, Awaitable
 
-from blocks.types import (
-    Event,
-    Source,
-    Processor,
-    AsyncSource,
-    EventOrEvents,
-    AsyncProcessor,
-)
+from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor
 
 SourceFunction = Callable[[], EventOrEvents]
 SourceAwaitable = Callable[[], Awaitable[EventOrEvents]]

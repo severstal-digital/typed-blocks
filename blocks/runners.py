@@ -1,18 +1,12 @@
 import time
 import asyncio
 import functools
+import traceback
 from typing import List, Type, Deque, Optional, Awaitable, DefaultDict, cast
 from collections import deque
 
 from blocks.graph import Graph
-from blocks.types import (
-    Event,
-    Source,
-    Processor,
-    AsyncSource,
-    EventOrEvents,
-    AsyncProcessor,
-)
+from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor
 from blocks.logger import logger
 
 SyncProcessors = DefaultDict[Type[Event], List[Processor]]
@@ -21,9 +15,8 @@ SyncProcessors = DefaultDict[Type[Event], List[Processor]]
 class Runner:
     def __init__(self, graph: Graph, terminal_event: Optional[Type[Event]]) -> None:
         if graph.contains_async_blocks:
-            raise RuntimeError(
-                'Blocks graph contains async blocks, must be runned by AsyncRunner'
-            )
+            raise RuntimeError('Blocks graph contains async blocks, must be run by AsyncRunner')
+
         self._sources = cast(List[Source], graph.sources)
         self._processors = cast(SyncProcessors, graph.processors)
         self._q: Deque[Event] = deque()
@@ -85,9 +78,12 @@ class Runner:
         for processor in self._processors[type(event)]:
             try:
                 events = processor(event)
-            except Exception as exc:
+            except Exception:
                 self.stop()
-                logger.info('Execution stopped cause:', exc)
+                logger.error('Execution failed during processing the event: {0}({1}) {2}'.format(
+                    processor.__class__.__name__, event.__class__.__name__, event,
+                ))
+                logger.error(traceback.format_exc())
             else:
                 self._append_events(events)
 
