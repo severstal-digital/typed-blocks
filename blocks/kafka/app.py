@@ -1,4 +1,5 @@
-import logging
+"""This module contains some anti-boilerplate stuff for a typical Kafka-Kafka stream application."""
+
 from typing import Type, Union, Optional, Sequence
 
 from wunderkafka import ConsumerConfig, ProducerConfig
@@ -15,13 +16,9 @@ Topic = Union[InputTopic, OutputTopic]
 
 class KafkaApp(App):
     """
-    High level API for building applications
-    with Kafka topics as inputs and possibly outputs.
-    Wrap Graph creation and build StreamApp as initialization.
-    Also add handlers for common events to the Graph such as
-    OpcCommand, ComponentMetric etc. On initialization KafkaApp
-    receives list of input and output topics, list of processors
-    and save_graph flag with True as default.
+    High level API for building applications with Kafka topics as inputs and outputs.
+
+    Also adds handlers for common events for kafka-specific things like commiting offsets.
 
     Example::
 
@@ -57,6 +54,17 @@ class KafkaApp(App):
         producer_config: Optional[ProducerConfig] = None,
         terminal_event: Optional[Type[Event]] = None,
     ) -> None:
+        """
+        Initiate Kafka app instance.
+
+        :param topics:              Input/OutputTopic to work with.
+        :param blocks:              Additional blocks with business logic, other events sources or just processors
+                                    to make effects.
+        :param consumer_config:     Default consumer config to be applied, if not defined per InputTopic.
+        :param producer_config:     Default producer config to be applied, if not defined per OutputTopic.
+        :param terminal_event:      If specified, special event to notify app to stop receiving events and close all
+                                    blocks properly.
+        """
         super().__init__(blocks=[], terminal_event=terminal_event)
         for block in blocks:
             self._graph.add_block(block)
@@ -70,20 +78,20 @@ class KafkaApp(App):
             elif isinstance(topic, OutputTopic):
                 output_topics.append(topic)
             else:
-                logging.warning('{0} is not a valid InputTopic/OutputTopic, ignoring it...'.format(topic))
+                logger.warning('{0} is not a valid InputTopic/OutputTopic, ignoring it...'.format(topic))
 
         if output_topics:
             self._graph.add_block(KafkaProducer(output_topics, producer_config))
 
-        if not input_topics:
-            # ToDo (tribunsky.kir): or should we raise Value Error cause it's KafkaApp, not any hybrid graph.
-            #                       or we may check other blocks here if there are any sources.
-            logger.warning('No input topics detected. Please, make sure, that you have other sources in your code.')
-        else:
+        if input_topics:
             source = KafkaSource(input_topics, consumer_config)
             self._graph.add_block(source)
             if CommitEvent in self._graph.outputs:
                 self._graph.add_block(OffsetCommitter(source.consumers))
+        else:
+            # ToDo (tribunsky.kir): or should we raise Value Error cause it's KafkaApp, not any hybrid graph.
+            #                       or we may check other blocks here if there are any sources.
+            logger.warning('No input topics detected. Please, make sure, that you have other sources in your code.')
 
-        # ToDo (tribunsky.kir): Great API! Move validation back to the graph
+        # ToDo (tribunsky.kir): "Great" API! Move validation back to the graph
         validate_blocks(self._graph.blocks)

@@ -3,15 +3,29 @@
 from typing import Dict, List, Optional, NamedTuple
 from dataclasses import dataclass
 
-from wunderkafka import AnyConsumer
+from wunderkafka import AnyConsumer, AnyProducer, AvroConsumer, ConsumerConfig, ProducerConfig, AvroModelProducer
 from confluent_kafka import TopicPartition
 
 from blocks.types import Event
 from blocks.logger import logger
-# from blocks.kafka.topics import InputTopic
+
 
 # ToDo (tribunsky.kir): make immutable?
 ConsumersMapping = Dict['InputTopic', AnyConsumer]
+
+
+class ConsumerFactory(object):
+    """Class to allow some narrow customization of consumers via InputTopic."""
+
+    type: AnyConsumer = AvroConsumer
+    conf: Optional[ConsumerConfig] = None
+
+
+class ProducerFactory(object):
+    """Class to allow some narrow customization of producers via OutputTopic."""
+
+    type: AnyProducer = AvroModelProducer
+    conf: Optional[ProducerConfig] = None
 
 
 class KafkaMessageMeta(NamedTuple):
@@ -106,9 +120,12 @@ class NoNewEvents(Event):
         >>> def generator(event: NoNewEvents) -> None:
         ...     print('No new events from {event.source}')
     """
+
     source: str
 
 
 @dataclass
 class Batch(Event):
+    """Built-in event which allows to send multiple messages to processors within single event."""
+
     events: List[Event]

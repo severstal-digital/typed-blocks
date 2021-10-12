@@ -189,6 +189,7 @@ def _read_topic_till_end(consumer: AnyConsumer, topic: InputTopic) -> List[Messa
         msgs = consumer.consume(topic.poll_timeout, topic.messages_limit, ignore_keys=topic.ignore_keys)
         if msgs:
             messages.extend(msgs)
+            empty_polls_count = 0
         else:
             empty_polls_count += 1
     return messages
