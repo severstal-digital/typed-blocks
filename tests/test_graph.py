@@ -19,14 +19,14 @@ def printer(event: MyEvent) -> MyOtherEvent:
     return MyOtherEvent(event.x, 1.0)
 
 
-def test_event_not_in_graph():
+def test_event_not_in_graph() -> None:
     graph = Graph()
 
     assert MyEvent not in graph.outputs
     assert MyOtherEvent not in graph.outputs
 
 
-def test_event_in_graph():
+def test_event_in_graph() -> None:
     graph = Graph()
     graph.add_block(printer())
 

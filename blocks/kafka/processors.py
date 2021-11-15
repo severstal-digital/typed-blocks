@@ -13,8 +13,8 @@ from blocks.kafka.topics import OutputTopic
 def _assign_producers(
     topics: List[OutputTopic],
     config: Optional[ProducerConfig],
-    cls: AnyProducer,
-) -> Dict[Type[Event], AvroModelProducer]:
+    cls: Type[AnyProducer],
+) -> Dict[Type[Event], AnyProducer]:
     if len({topic.event for topic in topics}) != len(topics):
         raise ValueError('All events types should be unique!')
 
@@ -62,7 +62,7 @@ class KafkaProducer(Processor):
         cls: AnyProducer = AvroModelProducer,
     ) -> None:
 
-        self._producers: Dict[Type[Any], AvroModelProducer] = _assign_producers(topics, config, cls)
+        self._producers: Dict[Type[Any], AnyProducer] = _assign_producers(topics, config, cls)
         self._topics: Dict[Type[Any], str] = {topic.event: topic.name for topic in topics}
 
         self.__call__.__annotations__.update(
@@ -80,7 +80,7 @@ class KafkaProducer(Processor):
     def close(self) -> None:
         for producer in self._producers.values():
             # ToDo (tribunsky.kir): mimic/make public
-            producer._producer.flush()
+            producer.flush()
 
 
 # ToDo (dp.zubakin): handle corner cases, e.g.

@@ -13,7 +13,7 @@ class Graph:
         self.sources: List[AnySource] = []
         self.processors: AnyProcessors = defaultdict(list)
 
-        self._output_events = set()
+        self._output_events: Set[Type[Event]] = set()
 
         if blocks is not None:
             for block in blocks:

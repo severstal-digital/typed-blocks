@@ -40,8 +40,8 @@ class KafkaSource(Source):
         self.consumers: ConsumersMapping = _init_consumers(topics, config, cls)
         self._commit_messages: Dict[InputTopic, Message] = {}
         self._ignore_errors = ignore_errors
-        out_annots = {topic.event for topic in topics}
-        self.__call__.__annotations__['return'] = List[Union[tuple(out_annots)]]  # type: ignore
+        out_annotations = {topic.event for topic in topics}
+        self.__call__.__annotations__['return'] = List[Union[tuple(out_annotations)]]
 
     def __call__(self) -> List[Event]:
         self._commit()
@@ -49,10 +49,8 @@ class KafkaSource(Source):
         for topic, consumer in self.consumers.items():
 
             if topic.batched:
-                print('Consuming batched {0}'.format(topic.name))
                 messages = _read_batch(consumer, topic)
             else:
-                print('Consuming {0}'.format(topic.name))
                 messages = consumer.consume(topic.poll_timeout, topic.messages_limit, ignore_keys=topic.ignore_keys)
 
             if topic.commit_regularly and messages:
@@ -68,7 +66,7 @@ class KafkaSource(Source):
 
     def _commit(self) -> None:
         for topic, message in self._commit_messages.items():
-            self.consumers[topic].consumer.commit(message)
+            self.consumers[topic].commit(message)
         if self._commit_messages:
             logger.debug(f'Messages: {self._commit_messages} committed')
             self._commit_messages.clear()
@@ -85,7 +83,8 @@ def cast(msg: Message, codec: Type[Event], ignore_errors: bool) -> Optional[Even
     if is_dataclass(codec):
         # ToDo (tribunsky.kir): move it to external cache OR
         #                       just do not use internally raw InputTopic's model on every message
-        dct = {k: v for k, v in msg.value().items() if k in inspect.signature(codec).parameters}
+        fields = inspect.signature(codec).parameters
+        dct = {k: v for k, v in msg.value().items() if k in fields}
     else:
         dct = msg.value()
 
@@ -127,7 +126,7 @@ def _make_events(
 def _init_consumers(
     topics: Sequence[InputTopic],
     config: Optional[ConsumerConfig],
-    cls: AnyConsumer,
+    cls: Type[AnyConsumer],
 ) -> ConsumersMapping:
     # ToDo (tribunsky.kir): looks like gid should be set per topic.
     consumers = {}
