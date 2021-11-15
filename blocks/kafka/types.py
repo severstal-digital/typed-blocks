@@ -1,31 +1,15 @@
 """This module contains specific event types for Kafka."""
 
 from typing import Dict, List, Optional, NamedTuple
-from dataclasses import dataclass
 
-from wunderkafka import AnyConsumer, AnyProducer, AvroConsumer, ConsumerConfig, ProducerConfig, AvroModelProducer
 from confluent_kafka import TopicPartition
 
-from blocks.types import Event
+from wunderkafka import AnyConsumer
 from blocks.logger import logger
-
+from blocks.kafka.topics import InputTopic
 
 # ToDo (tribunsky.kir): make immutable?
-ConsumersMapping = Dict['InputTopic', AnyConsumer]
-
-
-class ConsumerFactory(object):
-    """Class to allow some narrow customization of consumers via InputTopic."""
-
-    type: AnyConsumer = AvroConsumer
-    conf: Optional[ConsumerConfig] = None
-
-
-class ProducerFactory(object):
-    """Class to allow some narrow customization of producers via OutputTopic."""
-
-    type: AnyProducer = AvroModelProducer
-    conf: Optional[ProducerConfig] = None
+ConsumersMapping = Dict[InputTopic, AnyConsumer]
 
 
 class KafkaMessageMeta(NamedTuple):
@@ -64,68 +48,3 @@ class KafkaMessageMeta(NamedTuple):
             self.offset,
         ))
         return []
-
-
-@dataclass
-class EndTsIsReached(Event):
-    """
-    Built-in event which notifies app that all messages since application start have been already received.
-
-    Not supposed to be used directly.
-    """
-
-    topic_name: str
-
-
-# ToDo (tribunsky.kir): limited usage ability. Maybe we need more tracing between blocks.
-@dataclass
-class CommitEvent(Event):
-    """
-    Built-in event which allows to commit offset if specific message has been already processed.
-
-    Currently limited by events which are manually casted from kafka messages.
-
-    Example::
-
-      >>> from typing import Optional
-      >>> from blocks import Event, processor
-      >>> from blocks.kafka import CommitEvent
-      >>>
-      >>> class MyEvent(Event):
-      ...     field1: int
-      ...     field2: str
-      >>>
-      >>> @processor
-      >>> def proc(event: MyEvent) -> Optional[CommitEvent]:
-      ...     ...
-      ...     if event.field2 == 'some':
-      ...         return CommitEvent(e=event)
-    """
-
-    e: Event  # noqa: WPS111  # ToDo (tribunsky.kir): awkward API. Do something with `e=` w/o overloading core event.
-
-
-# ToDo (tribunsky.kir): IMHO, it is idiomatic enough to spawn such event, but there was an idea to get rid of it.
-@dataclass
-class NoNewEvents(Event):
-    """
-    Built-in event which allows to notify application, that there is no new messages polled from Kafka InputTopic.
-
-    Example::
-
-        >>> from blocks.kafka import NoNewEvents
-        >>> from blocks import processor
-        >>>
-        >>> @processor
-        >>> def generator(event: NoNewEvents) -> None:
-        ...     print('No new events from {event.source}')
-    """
-
-    source: str
-
-
-@dataclass
-class Batch(Event):
-    """Built-in event which allows to send multiple messages to processors within single event."""
-
-    events: List[Event]

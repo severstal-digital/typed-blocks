@@ -54,6 +54,9 @@ class Graph:
         return self._output_events
 
     @property
-    def blocks(self):
+    def blocks(self) -> List[Block]:
         list_of_lists = [lst for lst in self.processors.values()]
-        return self.sources + [item for sublist in list_of_lists for item in sublist]
+        processors: List[Block] = [item for sublist in list_of_lists for item in sublist]
+        sources: List[Block] = list(self.sources)
+        blocks = processors + sources
+        return blocks

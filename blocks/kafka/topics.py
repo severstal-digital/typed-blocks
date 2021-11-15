@@ -4,9 +4,25 @@ import datetime
 from enum import Enum
 from typing import Type, Optional
 
+from wunderkafka import AnyConsumer, AnyProducer, AvroConsumer, ConsumerConfig, ProducerConfig, AvroModelProducer
 from blocks.types import Event
 from blocks.logger import logger
-from blocks.kafka.types import Batch, ConsumerFactory, ProducerFactory
+from blocks.kafka.events import Batch
+
+
+class ConsumerFactory(object):
+    """Class to allow some narrow customization of consumers via InputTopic."""
+
+    type: Type[AnyConsumer] = AvroConsumer
+    conf: Optional[ConsumerConfig] = None
+
+
+class ProducerFactory(object):
+    """Class to allow some narrow customization of producers via OutputTopic."""
+
+    type: Type[AnyProducer] = AvroModelProducer
+    conf: Optional[ProducerConfig] = None
+
 
 DEFAULT_CONSUMER = ConsumerFactory()
 DEFAULT_PRODUCER = ProducerFactory()
@@ -155,8 +171,8 @@ class InputTopic(_Topic):
             raise ValueError(exc_msg)
         if batch_event is not None and self.read_till is None:
             failover = int(abs(10 / poll_timeout)) or 1
-            logger.warning('Using {0} as analog if 10 seconds as failover for batch waiting.'.format(failover))
-            self.max_empty_polls = self.max_empty_polls
+            logger.warning('Using {0} as analog of 10 seconds for batch waiting failover.'.format(failover))
+            self.max_empty_polls = failover
 
         super().__init__(name, event, key=key)
         self.group_id = group_id

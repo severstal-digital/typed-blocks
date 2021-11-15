@@ -3,11 +3,12 @@ from typing import Dict, List, Type, Union, Optional, Sequence
 from dataclasses import is_dataclass
 
 from pydantic import ValidationError
-from wunderkafka import Message, AnyConsumer, AvroConsumer, ConsumerConfig
 
+from wunderkafka import Message, AnyConsumer, AvroConsumer, ConsumerConfig
 from blocks.types import Event, Source
 from blocks.logger import logger
-from blocks.kafka.types import NoNewEvents, EndTsIsReached, ConsumersMapping, KafkaMessageMeta
+from blocks.kafka.types import ConsumersMapping, KafkaMessageMeta
+from blocks.kafka.events import NoNewEvents, EndTsIsReached
 from blocks.kafka.topics import InputTopic
 
 
@@ -34,14 +35,15 @@ class KafkaSource(Source):
         topics: List[InputTopic],
         config: Optional[ConsumerConfig] = None,
         *,
-        cls: AnyConsumer = AvroConsumer,
+        cls: Type[AnyConsumer] = AvroConsumer,
         ignore_errors: bool = True,
     ) -> None:
         self.consumers: ConsumersMapping = _init_consumers(topics, config, cls)
         self._commit_messages: Dict[InputTopic, Message] = {}
         self._ignore_errors = ignore_errors
         out_annotations = {topic.event for topic in topics}
-        self.__call__.__annotations__['return'] = List[Union[tuple(out_annotations)]]
+        # No magic, very explicit, aha.
+        self.__call__.__annotations__['return'] = List[Union[tuple(out_annotations)]]  # type: ignore
 
     def __call__(self) -> List[Event]:
         self._commit()
@@ -88,12 +90,14 @@ def cast(msg: Message, codec: Type[Event], ignore_errors: bool) -> Optional[Even
     else:
         dct = msg.value()
 
+    # ToDo (tribunsky.kir): definition of event via `= object` was a really 'nice' idea (no).
     try:
-        return codec(**dct)
+        return codec(**dct)  # type: ignore
     except (ValidationError, TypeError) as e:
         logger.error(e)
         if ignore_errors is False:
             raise
+    return None
 
 
 def _make_events(
@@ -131,7 +135,18 @@ def _init_consumers(
     # ToDo (tribunsky.kir): looks like gid should be set per topic.
     consumers = {}
     for topic in topics:
-        gid = topic.group_id or config.group_id
+        if topic.group_id is None:
+            if config is None:
+                msg = ' '.join([
+                    'Please, check group.id.',
+                    'It may be set per InputTopic or should at least be provided via ConsumerConfig.',
+                    'Currently both values are set to None.'
+                ])
+                raise ValueError(msg)
+            else:
+                gid = config.group_id
+        else:
+            gid = topic.group_id
         if topic.committable and gid is None:
             raise ValueError('For offset committing group_id must be provided')
 

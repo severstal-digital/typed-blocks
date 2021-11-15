@@ -3,10 +3,10 @@
 from typing import Any, Dict, List, Type, Union, Optional
 
 from wunderkafka import AnyProducer, ProducerConfig, AvroModelProducer
-
 from blocks.types import Event, Processor
 from blocks.logger import logger
-from blocks.kafka.types import CommitEvent, ConsumersMapping
+from blocks.kafka.types import ConsumersMapping
+from blocks.kafka.events import CommitEvent
 from blocks.kafka.topics import OutputTopic
 
 
@@ -59,7 +59,7 @@ class KafkaProducer(Processor):
         self,
         topics: List[OutputTopic],
         config: Optional[ProducerConfig],
-        cls: AnyProducer = AvroModelProducer,
+        cls: Type[AnyProducer] = AvroModelProducer,
     ) -> None:
 
         self._producers: Dict[Type[Any], AnyProducer] = _assign_producers(topics, config, cls)
@@ -119,4 +119,4 @@ class OffsetCommitter(Processor):
             return None
         to_commit = msg_metadata.to_commit()
         logger.debug('Really committing! {0} | {1}'.format(msg_metadata, to_commit))
-        self._consumers[msg_metadata.topic].consumer.commit(offsets=to_commit)
+        self._consumers[msg_metadata.topic].commit(offsets=to_commit)
