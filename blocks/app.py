@@ -16,8 +16,8 @@ class App:
         self._graph = Graph(blocks)
         self._terminal_event = terminal_event
 
-    def run(self, *, interval: float = 1, once: bool = False) -> None:
-        Runner(self._graph, self._terminal_event).run(interval=interval, once=once)
+    def run(self, *, min_interval: float = 0.0, once: bool = False) -> None:
+        Runner(self._graph, self._terminal_event).run(interval=min_interval, once=once)
 
-    async def run_async(self, *, interval: float = 1, once: bool = False) -> None:
-        await AsyncRunner(self._graph, self._terminal_event).run(interval=interval, once=once)
+    async def run_async(self, *, min_interval: float = 0.0, once: bool = False) -> None:
+        await AsyncRunner(self._graph, self._terminal_event).run(interval=min_interval, once=once)
