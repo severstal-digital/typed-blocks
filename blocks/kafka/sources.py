@@ -92,7 +92,7 @@ def cast(msg: Message, codec: Type[Event], ignore_errors: bool) -> Optional[Even
 
     # ToDo (tribunsky.kir): definition of event via `= object` was a really 'nice' idea (no).
     try:
-        return codec(**dct)  # type: ignore
+        return codec(**dct)
     except (ValidationError, TypeError) as e:
         logger.error(e)
         if ignore_errors is False:

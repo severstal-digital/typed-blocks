@@ -5,6 +5,7 @@ from redis import Redis
 from blocks import Event, Processor
 from blocks.redis.serdes import Serializer, serialize
 from blocks.redis.streams import OutputStream
+from blocks.utils import event2dict
 
 
 class RedisProducer(Processor):
@@ -47,7 +48,7 @@ class RedisProducer(Processor):
 
     def __call__(self, event: Event) -> None:
         stream = self._streams[type(event)]
-        serialized = self._serializer(event.dict())
+        serialized = self._serializer(event2dict(event))
         self._client.xadd(stream.name, fields=serialized, maxlen=stream.max_len)  # type: ignore
 
     def close(self) -> None:
