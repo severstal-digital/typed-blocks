@@ -1,11 +1,13 @@
-from typing import Type, Optional, Sequence
+from typing import Type, Union, Optional, Sequence
 
 from redis import Redis
 
 from blocks import App, Block, Event
-from blocks.redis import InputStream, OutputStream, RedisConsumer, RedisProducer, _Stream
 from blocks.validation import validate_blocks
 from blocks.redis.serdes import Serializer, Deserializer, serialize, deserialize
+from blocks.redis.sources import RedisConsumer
+from blocks.redis.streams import InputStream, OutputStream
+from blocks.redis.processors import RedisProducer
 
 
 # ToDo (tribunsky.kir): from now it looks like GREAT copypaste of KafkaApp,
@@ -36,7 +38,7 @@ class RedisStreamsApp(App):
     # ToDo (tribunsky.kir): maybe it is worth to add serdes per stream.
     def __init__(
         self,
-        streams: Sequence[_Stream],
+        streams: Sequence[Union[InputStream, OutputStream]],
         blocks: Sequence[Block],
         redis_client: Redis,
         read_timeout: int = 100,

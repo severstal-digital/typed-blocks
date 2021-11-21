@@ -3,8 +3,8 @@ from typing import Dict, List, Type, Union, Optional, Sequence
 from dataclasses import is_dataclass
 
 from pydantic import ValidationError
-
 from wunderkafka import Message, AnyConsumer, AvroConsumer, ConsumerConfig
+
 from blocks.types import Event, Source
 from blocks.logger import logger
 from blocks.kafka.types import ConsumersMapping, KafkaMessageMeta

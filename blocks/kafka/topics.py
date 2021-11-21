@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Type, Optional
 
 from wunderkafka import AnyConsumer, AnyProducer, AvroConsumer, ConsumerConfig, ProducerConfig, AvroModelProducer
+
 from blocks.types import Event
 from blocks.logger import logger
 from blocks.kafka.events import Batch

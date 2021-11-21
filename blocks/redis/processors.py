@@ -3,9 +3,9 @@ from typing import Dict, List, Type, Union
 from redis import Redis
 
 from blocks import Event, Processor
+from blocks.utils import event2dict
 from blocks.redis.serdes import Serializer, serialize
 from blocks.redis.streams import OutputStream
-from blocks.utils import event2dict
 
 
 class RedisProducer(Processor):

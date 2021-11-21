@@ -3,6 +3,7 @@
 from typing import Any, Dict, List, Type, Union, Optional
 
 from wunderkafka import AnyProducer, ProducerConfig, AvroModelProducer
+
 from blocks.types import Event, Processor
 from blocks.logger import logger
 from blocks.kafka.types import ConsumersMapping

@@ -1,8 +1,7 @@
-from typing import Dict, Any
-from dataclasses import is_dataclass, asdict
+from typing import Any, Dict
+from dataclasses import asdict, is_dataclass
 
 from blocks.types import Event
-
 
 try:
     from pydantic import BaseModel
