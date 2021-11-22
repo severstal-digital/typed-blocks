@@ -1,7 +1,16 @@
 from abc import ABC, abstractmethod
 from typing import Any, Union, Iterable, Optional
 
-Event = object
+
+class Event(object):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        err = '. '.join([
+            'You are going to use lightweight version of event',
+            'Define __init__-method, or use dataclasses or pydantic instead.',
+        ])
+        raise NotImplementedError(err)
+
+
 EventOrEvents = Union[Event, Iterable[Event]]
 
 
