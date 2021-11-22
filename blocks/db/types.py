@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import List, Type, Union, NamedTuple
-from dataclasses import dataclass
+from typing import List, Type, Union, Tuple
+from dataclasses import dataclass, asdict
 
 from blocks import Event
 
@@ -27,6 +27,14 @@ class Row(Event):
     """
     ...
 
+    @property
+    def columns(self) -> List[str]:
+        return list(asdict(self).keys())
+
+    @property
+    def values(self) -> Tuple:
+        return tuple(asdict(self).values())
+
 
 @dataclass
 class Table(Event):
@@ -51,6 +59,17 @@ class Table(Event):
       >>> query = Query('SELECT * FROM some_table', SomeTable)
     """
     rows: List[Row]
+
+    @property
+    def columns(self) -> List[str]:
+        # ToDo (tribunsky.kir): stupid, but will work for simple cases
+        if self.rows:
+            return self.rows[0].columns
+        return []
+
+    @property
+    def values(self) -> List[Tuple]:
+        return [row.values for row in self.rows]
 
 
 @dataclass

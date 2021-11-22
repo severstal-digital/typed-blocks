@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, List, Union
+from typing import Any, List, Union, Callable
 
 from blocks import Event, Source
 from blocks.logger import logger
 from blocks.db.types import Row, Query, Table
 from blocks.postgres.protocols import Connection
 
-# ToDo (tribunsky.kir): looks like we need some simple ORM.
+# ToDo (tribunsky.kir): looks like we need some simple model-to-query derivation.
 #                       Cause definition of model already dictates us which fields should be selected
 #                       e.g. read_queries = [Query('select * from some_table', MyTableRow)]
-#                       means like we want only specific columns from Mytable
+#                       means like we want only specific columns from MyTable
+#                       But it will restrict us to use simple queries only
 
 
 def _get_rows_or_table(conn: Connection, query: Query) -> Union[List[Row], Table]:
@@ -67,18 +68,19 @@ class PostgresReader(Source):
       >>> graph.add_block(PostgresReader(queries))
     """
     # ToDo (tribunsky.kir): re-do on factory, which is able to create Connection on demand, or context manager.
-    def __init__(self, queries: List[Query], conn: Connection) -> None:
-        self._conn = conn
+    def __init__(self, queries: List[Query], conn: Callable[[], Connection]) -> None:
+        self._conn_factory = conn
         self._queries = queries
         out_annots = {query.codec for query in queries}
         self.__call__.__annotations__['return'] = List[Union[tuple(out_annots)]]  # type: ignore
 
     def __call__(self) -> List[Event]:
+        conn = self._conn_factory()
         try:
-            with self._conn:
-                rows_or_tables = self._run_queries(self._conn)
+            with conn:
+                rows_or_tables = self._run_queries(conn)
         finally:
-            self._conn.close()
+            conn.close()
         return rows_or_tables
 
     def _run_queries(self, conn: Any) -> List[Event]:

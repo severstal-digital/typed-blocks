@@ -1,4 +1,4 @@
-from typing import List, Type, Optional, Sequence
+from typing import List, Type, Callable, Optional, Sequence
 
 from blocks import App, Event, Runner, Processor
 from blocks.db import Query
@@ -40,7 +40,7 @@ class PostgresApp(App):
     def __init__(
         self,
         # ToDo (tribunsky.kir): leaky abstraction, check on more examples of libraries which implement PEP 249
-        connection: Connection,
+        connection_factory: Callable[[], Connection],
         read_queries: Optional[List[Query]] = None,
         blocks: Optional[Sequence[Processor]] = None,
         update_queries: Optional[List[Query]] = None,
@@ -48,14 +48,14 @@ class PostgresApp(App):
     ) -> None:
         super().__init__(blocks=[], terminal_event=terminal_event)
         if read_queries:
-            self._graph.add_block(PostgresReader(read_queries, connection))
+            self._graph.add_block(PostgresReader(read_queries, connection_factory))
 
         if blocks is not None:
             for processor in blocks:
                 self._graph.add_block(processor)
 
         if update_queries:
-            self._graph.add_block(PostgresWriter(update_queries, connection))
+            self._graph.add_block(PostgresWriter(update_queries, connection_factory))
 
         validate_blocks(self._graph.blocks)
 

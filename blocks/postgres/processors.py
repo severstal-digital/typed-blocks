@@ -1,21 +1,29 @@
-from typing import Any, Dict, List, Union
+from typing import List, Union, Callable
+
+from psycopg2 import sql
 
 from blocks import Processor
-from blocks.logger import logger
 from blocks.db.types import Row, Query, Table
 from blocks.postgres.protocols import Connection
 
 
-def _exec_query(conn: Connection, query_text: str, q_params: Dict[str, Any]) -> None:
-    with conn.cursor() as cur:
-        logger.info(f'Executing query: {query_text}')
-        cur.execute(query_text, q_params)
-
-
-def _exec_queries(conn: Connection, query_text: str, params_list: List[Dict[str, Any]]) -> None:
-    with conn.cursor() as cur:
-        logger.info(f'Executing query: {query_text}')
-        cur.executemany(query_text, params_list)
+# FixMe (tribunsky.kir): not sure if it is good idea to give the user execute any queries
+def _exec_queries(conn: Connection, query_text: str, rows: Table) -> None:
+    columns = rows.columns
+    query = sql.SQL(query_text).format(
+        sql.SQL(', ').join([sql.Identifier(col) for col in columns]),
+        sql.SQL(', ').join(sql.Placeholder() * len(columns)),
+    )
+    with conn.cursor() as cursor:
+        insert_tuples = rows.values
+        # psycopg2.extras.execute_values (cursor, query, rows.values, )
+        # ToDo (tribunsky.kir): optimize; executemany is slow too https://github.com/psycopg/psycopg2/issues/491
+        # cursor.execute(query, insert_tuples)
+        total_count = len(insert_tuples)
+        query_formatted = query.as_string(conn)
+        for ix, tpl in enumerate(insert_tuples, 1):
+            print('[{0}/{1}] Executing query: {2} {3}'.format(ix, total_count, query_formatted, tpl))
+            cursor.execute(query, tpl)
 
 
 class PostgresWriter(Processor):
@@ -31,13 +39,14 @@ class PostgresWriter(Processor):
       >>> from blocks.postgres import PostgresWriter, Query, Row
       >>> class TableRow(Row):
       ...     x: int
-      >>> queries = [Query('insert into some_table values (%s)', TableRow)]
+      >>> queries = [Query('insert into table ({}) values ({})', TableRow)]
       >>> graph = Graph()
       >>> graph.add_block(PostgresWriter(queries))
     """
 
-    def __init__(self, queries: List[Query], conn: Connection) -> None:
-        self._conn = conn
+    def __init__(self, queries: List[Query], connection_factory: Callable[[], Connection]) -> None:
+        self._connection_factory = connection_factory
+        self._conn = self._connection_factory()
         self._queries = {query.codec: query for query in queries}
         self._closed = False
         self.__call__.__annotations__.update(
@@ -53,9 +62,12 @@ class PostgresWriter(Processor):
     def _run_query(self, conn: Connection, event: Union[Row, Table]) -> None:
         query = self._queries[type(event)]
         if isinstance(event, Row):
-            _exec_query(conn, query.text, dict(event))
+            table = Table(rows=[event])
         elif isinstance(event, Table):
-            _exec_queries(conn, query.text, [dict(row) for row in event.rows])
+            table = event
+        else:
+            raise ValueError('Wrong event type {0}'.format(event))
+        _exec_queries(conn, query.text, table)
 
     def close(self) -> None:
         if not self._closed:
