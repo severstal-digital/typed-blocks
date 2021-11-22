@@ -5,7 +5,7 @@ from datetime import datetime
 
 from schedule import Job
 
-from blocks.types import Event, EventOrEvents, Source
+from blocks.types import Event, Source, EventOrEvents
 
 
 class Scheduler(Source):

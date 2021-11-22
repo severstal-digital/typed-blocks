@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import List, Type, Union, Tuple
-from dataclasses import dataclass, asdict
+from typing import List, Type, Tuple, Union
+from dataclasses import asdict, dataclass
 
 from blocks import Event
 
