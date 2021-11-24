@@ -3,11 +3,12 @@ from typing import List, Union, Callable
 from psycopg2 import sql
 
 from blocks import Processor
+from blocks.logger import logger
 from blocks.db.types import Row, Query, Table
 from blocks.postgres.protocols import Connection
 
 
-# FixMe (tribunsky.kir): not sure if it is good idea to give the user execute any queries
+# ToDo (tribunsky.kir): not sure if it is good idea to give the user execute any queries
 def _exec_queries(conn: Connection, query_text: str, rows: Table) -> None:
     columns = rows.columns
     query = sql.SQL(query_text).format(
@@ -16,13 +17,12 @@ def _exec_queries(conn: Connection, query_text: str, rows: Table) -> None:
     )
     with conn.cursor() as cursor:
         insert_tuples = rows.values
-        # psycopg2.extras.execute_values (cursor, query, rows.values, )
         # ToDo (tribunsky.kir): optimize; executemany is slow too https://github.com/psycopg/psycopg2/issues/491
-        # cursor.execute(query, insert_tuples)
+        #                       Maybe a nice approach would be: psycopg2.extras.execute_values
         total_count = len(insert_tuples)
         query_formatted = query.as_string(conn)
         for ix, tpl in enumerate(insert_tuples, 1):
-            print('[{0}/{1}] Executing query: {2} {3}'.format(ix, total_count, query_formatted, tpl))
+            logger.info('[{0}/{1}] Executing query: {2} {3}'.format(ix, total_count, query_formatted, tpl))
             cursor.execute(query, tpl)
 
 

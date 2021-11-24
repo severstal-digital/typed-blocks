@@ -92,6 +92,3 @@ class PostgresReader(Source):
             else:
                 rows_or_tables.append(row_or_table)
         return rows_or_tables
-
-    def close(self) -> None:
-        pass
