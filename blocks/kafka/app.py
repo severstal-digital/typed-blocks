@@ -2,8 +2,9 @@
 
 from typing import Type, Union, Optional, Sequence
 
-from blocks import App, Block, Event
 from wunderkafka import ConsumerConfig, ProducerConfig
+
+from blocks import App, Block, Event
 from blocks.logger import logger
 from blocks.validation import validate_blocks
 from blocks.kafka.topics import InputTopic, OutputTopic

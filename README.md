@@ -1,9 +1,11 @@
 # typed-blocks
-```
+
+Modular event-centric python library made for simplification typical stream applications development with python type system strong exploitation.
+
+```python
 from dataclasses import dataclass
 
-from blocks.core.app import App
-from blocks.core.decorators import source, processor
+from blocks import App, source, processor
 
 
 @dataclass
