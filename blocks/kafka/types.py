@@ -2,9 +2,9 @@
 
 from typing import Dict, List, Optional, NamedTuple
 
+from wunderkafka import AnyConsumer
 from confluent_kafka import TopicPartition
 
-from wunderkafka import AnyConsumer
 from blocks.logger import logger
 from blocks.kafka.topics import InputTopic
 
