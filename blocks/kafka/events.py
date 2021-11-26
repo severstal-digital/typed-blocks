@@ -25,14 +25,14 @@ class CommitEvent(Event):
 
     Example::
 
-      >>> from typing import Optional
+      >>> from typing import Optional, NamedTuple
       >>> from blocks import Event, processor
       >>> from blocks.kafka import CommitEvent
-      >>>
-      >>> class MyEvent(Event):
+
+      >>> class MyEvent(NamedTuple):
       ...     field1: int
       ...     field2: str
-      >>>
+
       >>> @processor
       >>> def proc(event: MyEvent) -> Optional[CommitEvent]:
       ...     ...
@@ -53,7 +53,7 @@ class NoNewEvents(Event):
 
         >>> from blocks.kafka import NoNewEvents
         >>> from blocks import processor
-        >>>
+
         >>> @processor
         >>> def generator(event: NoNewEvents) -> None:
         ...     print('No new events from {event.source}')

@@ -22,14 +22,14 @@ class PostgresApp(App):
       >>> import psycopg2
       >>> from blocks import processor
       >>> from blocks.postgres import PostgresApp, Query, Row
-      >>>
+
       >>> class MyTableRow(Row):
       ...     x: int
-      >>>
+
       >>> @processor
       ... def printer(e: MyTableRow) -> None:
       ...     print(e)
-      >>>
+
       >>> conn = psycopg2.connect(...)
       >>> read_queries = [Query('select * from some_table', MyTableRow)]
       >>> blocks = [printer()]

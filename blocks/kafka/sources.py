@@ -17,17 +17,19 @@ class KafkaSource(Source):
     Class represents event source that reads messages from Kafka topics
     and wraps them into given events. On initialization must get list
     of input topics in order to perform arbitrary mapping. In most cases
-    you don't need to use KafkaConsumer directly, KafkaApp can make this for you.
+    you don't need to use KafkaSource directly, KafkaApp can make this for you.
 
     Example::
 
-      >>> from blocks import Event, Graph
+      >>> from blocks import Event
+      >>> from pydantic import BaseModel
       >>> from blocks.kafka import KafkaSource, InputTopic
-      >>> class MyEvent(Event):
+
+      >>> class MyEvent(BaseModel):
       ...     x: int
+
       >>> topics = [InputTopic('some_topic', MyEvent)]
-      >>> graph = Graph()
-      >>> graph.add_block(KafkaSource(topics))
+      >>> blocks = (KafkaSource(topics), )
     """
 
     def __init__(
@@ -38,6 +40,15 @@ class KafkaSource(Source):
         cls: Type[AnyConsumer] = AvroConsumer,
         ignore_errors: bool = True,
     ) -> None:
+        """
+        Init KafkaSource instance.
+
+        :param topics:          List of topics with corresponding settings to subscribe.
+        :param config:          Failover configuration for consumer if there is no configuration per InputTopic.
+        :param cls:             Failover factory to create consumer if there is no configuration per InputTopic.
+        :param ignore_errors:   If True, do not fail during casting messages to events. By design, messages in Kafka may
+                                be produced with totally different schemas, or without any.
+        """
         self.consumers: ConsumersMapping = _init_consumers(topics, config, cls)
         self._commit_messages: Dict[InputTopic, Message] = {}
         self._ignore_errors = ignore_errors
@@ -46,6 +57,11 @@ class KafkaSource(Source):
         self.__call__.__annotations__['return'] = List[Union[tuple(out_annotations)]]  # type: ignore
 
     def __call__(self) -> List[Event]:
+        """
+        Emit messages from all topics as events to the internal queue.
+
+        :return:        Single event or sequence of events.
+        """
         self._commit()
         events = []
         for topic, consumer in self.consumers.items():
@@ -64,6 +80,7 @@ class KafkaSource(Source):
         return events
 
     def close(self) -> None:
+        """Graceful shutdown: commit anything that should be committed as in InputTopic configurations."""
         self._commit()
 
     def _commit(self) -> None:

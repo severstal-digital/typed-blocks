@@ -20,17 +20,18 @@ class RedisConsumer(Source):
 
     Example::
 
+      >>> from typing import NamedTuple
+
       >>> from redis import Redis
       >>> from blocks import Event, Graph
       >>> from blocks.redis import RedisConsumer, InputStream
       >>>
-      >>> class MyEvent(Event):
+      >>> class MyEvent(NamedTuple):
       ...     x: int
       >>>
       >>> streams = [InputStream('some_stream', MyEvent)]
-      >>> graph = Graph()
       >>> client = Redis(...)
-      >>> graph.add_block(RedisConsumer(client, streams, read_timeout=100)
+      >>> blocks = (RedisConsumer(client, streams, read_timeout=100), ...)
     """
 
     def __init__(
@@ -77,4 +78,5 @@ class RedisConsumer(Source):
         return events
 
     def close(self) -> None:
+        """Graceful shutdown: close reids client."""
         self._client.close()

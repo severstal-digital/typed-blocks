@@ -12,6 +12,8 @@
 #
 import os
 import sys
+
+from configparser import ConfigParser
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
@@ -19,6 +21,10 @@ sys.path.insert(0, os.path.abspath('..'))
 project = 'Typed Blocks'
 copyright = '2021, Severstal Digital'
 author = 'Daniil Zubakin'
+
+cfg = ConfigParser()
+cfg.read('../setup.cfg')
+version = cfg['metadata']['version']
 
 # -- General configuration ---------------------------------------------------
 

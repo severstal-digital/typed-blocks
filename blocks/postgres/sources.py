@@ -59,13 +59,12 @@ class PostgresReader(Source):
 
       >>> from blocks import Graph
       >>> from blocks.postgres import PostgresReader, Query, Row
-      >>>
+
       >>> class TableRow(Row):
       ...     x: int
-      >>>
+
       >>> queries = [Query('select * from some_table', TableRow)]
-      >>> graph = Graph()
-      >>> graph.add_block(PostgresReader(queries))
+      >>> blocks = (PostgresReader(queries), ...)
     """
     # ToDo (tribunsky.kir): re-do on factory, which is able to create Connection on demand, or context manager.
     def __init__(self, queries: List[Query], conn: Callable[[], Connection]) -> None:

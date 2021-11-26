@@ -69,15 +69,16 @@ class OutputTopic(_Topic):
 
     Example::
 
-      >>> from blocks import Event, Graph
+      >>> from typing import NamedTuple
+
+      >>> from blocks import Event
       >>> from blocks.kafka import KafkaProducer,
-      >>>
-      >>> class MyEvent(Event):
+
+      >>> class MyEvent(NamedTuple):
       ...     x: int
-      >>>
+
       >>> topics = [OutputTopic('some_topic', MyEvent, debug='all')]
-      >>> graph = Graph()
-      >>> graph.add_block(KafkaProducer(topics))
+      >>> blocks = (KafkaProducer(topics), ...)
     """
 
     def __init__(
@@ -106,13 +107,16 @@ class InputTopic(_Topic):
 
     Example::
 
-      >>> from blocks import Event, Graph
+      >>> from typing import NamedTuple
+
+      >>> from blocks import Event
       >>> from blocks.kafka import KafkaSource, InputTopic
-      >>> class MyEvent(Event):
+
+      >>> class MyEvent(NamedTuple):
       ...     x: int
+
       >>> topics = [InputTopic('some_topic', MyEvent, from_beginning=True)]
-      >>> graph = Graph()
-      >>> graph.add_block(KafkaSource(topics))
+      >>> blocks = (KafkaSource(topics), )
     """
 
     def __init__(  # noqa: WPS211  # ToDo (tribunsky.kir): InputTopic overloaded.

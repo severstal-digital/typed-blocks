@@ -7,12 +7,12 @@ class AnnotationError(Exception):
     ...
 
 
-def _get_annots(block: Block) -> Dict[str, Any]:
+def _get_annotations(block: Block) -> Dict[str, Any]:
     return dict(block.__call__.__annotations__)
 
 
 def get_input_events_type(block: Block) -> List[Type[Event]]:
-    annots = _get_annots(block)
+    annots = _get_annotations(block)
     annots.pop('return', None)
     if len(annots) == 0:
         return []
@@ -23,7 +23,7 @@ def get_input_events_type(block: Block) -> List[Type[Event]]:
 
 
 def get_output_events_type(block: Block) -> List[Type[Event]]:
-    annots = _get_annots(block)
+    annots = _get_annotations(block)
     annotations_to_flatten = [annots.get('return', None)]
     result = []
     while annotations_to_flatten:

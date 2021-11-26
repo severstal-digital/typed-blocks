@@ -9,7 +9,7 @@ But you may want to install typed-blocks with various features. In that case you
 $ pip install typed-blocks[<extra_name_1>, <extra_name_2>]
 
 Available extras
-================
+----------------
 
 .. list-table::
    :widths: 10 90

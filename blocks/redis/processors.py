@@ -17,17 +17,18 @@ class RedisProducer(Processor):
 
     Example::
 
+      >>> from typing import NamedTuple
+
       >>> from redis import Redis
       >>> from blocks import Event, Graph
       >>> from blocks.redis import RedisProducer, OutputStream
-      >>>
-      >>> class MyEvent(Event):
+
+      >>> class MyEvent(NamedTuple):
       ...     x: int
-      >>>
+
       >>> streams = [OutputStream('some_stream', MyEvent)]
-      >>> graph = Graph()
       >>> client = Redis(...)
-      >>> graph.add_block(RedisProducer(client, streams))
+      >>> blocks = (RedisProducer(client, streams), ...)
     """
 
     def __init__(
@@ -52,4 +53,5 @@ class RedisProducer(Processor):
         self._client.xadd(stream.name, fields=serialized, maxlen=stream.max_len)  # type: ignore
 
     def close(self) -> None:
-        ...
+        """Graceful shutdown: close reids client."""
+        self._client.close()

@@ -2,7 +2,7 @@ from typing import Any, Set, List, Type, Sequence
 
 from blocks.types import Block, Event, Source, Processor, AsyncSource, AsyncProcessor
 from blocks.logger import logger
-from blocks.annotations import AnnotationError, _get_annots, get_input_events_type, get_output_events_type
+from blocks.annotations import AnnotationError, _get_annotations, get_input_events_type, get_output_events_type
 
 EXCLUDED_EVENTS = [type(None)]
 
@@ -68,18 +68,18 @@ def validate_blocks(blocks: Sequence[Block], excluded_events: Sequence[Type[Even
 
 
 def validate_annotations(block: Block) -> None:
-    annots = _get_annots(block)
+    annotations = _get_annotations(block)
     if isinstance(block, (AsyncProcessor, Processor)):
-        if len(annots) < 2:
+        if len(annotations) < 2:
             raise AnnotationError(
                 f"Given processor: {type(block).__name__} doesn't annotated well."
                 'Make sure that input and output annotations properly written'
             )
-        elif len(annots) > 2:
+        elif len(annotations) > 2:
             raise AnnotationError('Processor should have exactly one argument')
 
     elif isinstance(block, (AsyncSource, Source)):
-        if len(annots) != 1 and 'return' not in annots:
+        if len(annotations) != 1 and 'return' not in annotations:
             raise AnnotationError(
                 f"Given source: {type(block).__name__} doesn't annotated well."
                 'Make sure that output annotations properly written'

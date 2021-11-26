@@ -9,9 +9,13 @@ Welcome to Typed Blocks's documentation!
 .. toctree::
    :maxdepth: 2
 
-   pages/installation.rst
+   pages/install.rst
+   pages/concepts.rst
+   pages/events.rst
    pages/quickstart.rst
    pages/blocks.rst
+   pages/connectors.rst
+   pages/examples.rst
 
 Indices and tables
 ==================

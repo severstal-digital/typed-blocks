@@ -1,119 +1,43 @@
-Core API (blocks.core)
-======================
+API for daily use
+=================
+
 App
 ---
 
-.. automodule:: blocks.core.app
+.. automodule:: blocks.app
    :members:
+   :special-members:
+   :exclude-members: __weakref__
+
+Blocks
+------
+
+.. automodule:: blocks.types
+   :members:
+   :special-members:
+   :exclude-members: __weakref__
 
 Decorators
 ----------
 
-.. automodule:: blocks.core.decorators
+.. automodule:: blocks.decorators
    :members:
 
-Exceptions
-----------
+Advanced API
+============
 
-.. automodule:: blocks.core.exceptions
-   :members:
+Internal machinery: it is hidden by :code:`App` and it's run.
 
 Graph
 -----
-.. automodule:: blocks.core.graph
+.. automodule:: blocks.graph
    :members:
+   :special-members:
+   :exclude-members: __weakref__
 
-Interfaces
-----------
-.. automodule:: blocks.core.interfaces
-   :members:
-
-Types
------
-.. automodule:: blocks.core.types
-   :members:
-
-Database API (blocks.db)
-========================
-Types
------
-
-.. automodule:: blocks.db.types
-   :members:
-
-Kafka API (blocks.kafka)
-========================
-App
----
-
-.. automodule:: blocks.kafka.app
-   :members:
-
-Common Events
--------------
-.. automodule:: blocks.kafka.common_events
-   :members:
-
-Processors
-----------
-.. automodule:: blocks.kafka.processors
-   :members:
-
-Sources
--------
-.. automodule:: blocks.kafka.sources
-   :members:
-
-Topics
+Runner
 ------
-.. automodule:: blocks.kafka.topics
+.. automodule:: blocks.runners
    :members:
-
-Types
------
-.. automodule:: blocks.kafka.types
-   :members:
-
-Postgres API (blocks.postgres)
-========================================
-
-App
----
-.. automodule:: blocks.postgres.app
-   :members:
-
-Processors
-----------
-.. automodule:: blocks.postgres.processors
-   :members:
-
-Sources
--------
-.. automodule:: blocks.postgres.sources
-   :members:
-
-Event Processors API (blocks.processors)
-========================================
-
-Batcher
--------
-.. automodule:: blocks.processors.batcher
-   :members:
-
-Interrupter
------------
-.. automodule:: blocks.processors.interrupter
-   :members:
-
-Event Sources API (blocks.sources)
-==================================
-
-Fake Source
------------
-.. automodule:: blocks.sources.fake_source
-   :members:
-
-Scheduler
----------
-.. automodule:: blocks.sources.scheduler
-   :members:
+   :special-members:
+   :exclude-members: __weakref__
