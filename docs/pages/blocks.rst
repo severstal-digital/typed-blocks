@@ -23,6 +23,12 @@ Decorators
 .. automodule:: blocks.decorators
    :members:
 
+Scheduler
+---------
+
+.. automodule:: blocks.sources.schedule
+   :members:
+
 Advanced API
 ============
 
