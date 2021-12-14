@@ -20,6 +20,44 @@ class Event(object):
 EventOrEvents = Union[Event, Iterable[Event]]
 
 
+class Source(ABC):
+    """
+    Interface to represent single source of events, which emits them for the further processing.
+
+    Class usage allows easily handle some internal state, if needed.
+
+    Example::
+
+      >>> from typing import NamedTuple, List
+
+      >>> from blocks import Source
+
+      >>> class MyEvent(NamedTuple):
+      ...     ...
+
+      >>> class MySource(Source):
+      ...
+      ...     def __init__(self, events: List[MyEvent]) -> None:
+      ...         self.events = events
+      ...
+      ...     def __call__(self) -> List[MyEvent]:
+      ...         return self.events[:]
+
+      >>> blocks = (MySource(events=[MyEvent()]))
+    """
+
+    @abstractmethod
+    def __call__(self) -> EventOrEvents:
+        """
+        Emit new events to the internal queue.
+
+        :return:        Single event or sequence of events.
+        """
+
+    def close(self) -> None:
+        """Define your graceful shutdown here."""
+
+
 class Processor(ABC):
     """
     Interface to represent single unit of calculations, which reacts to some specific event.
@@ -56,44 +94,6 @@ class Processor(ABC):
         :return:        Event or sequence of events to be processed later or by other processed.
                         Processor may return None, e.g. while implementing some effects in outer systems and
                         when result processing is unnecessary.
-        """
-
-    def close(self) -> None:
-        """Define your graceful shutdown here."""
-
-
-class Source(ABC):
-    """
-    Interface to represent single source of events, which emits them for the further processing.
-
-    Class usage allows easily handle some internal state, if needed.
-
-    Example::
-
-      >>> from typing import NamedTuple, List
-
-      >>> from blocks import Source
-
-      >>> class MyEvent(NamedTuple):
-      ...     ...
-
-      >>> class MySource(Source):
-      ...
-      ...     def __init__(self, events: List[MyEvent]) -> None:
-      ...         self.events = events
-      ...
-      ...     def __call__(self) -> List[MyEvent]:
-      ...         return self.events[:]
-
-      >>> blocks = (MySource(events=[MyEvent()]))
-    """
-
-    @abstractmethod
-    def __call__(self) -> EventOrEvents:
-        """
-        Emit new events to the internal queue.
-
-        :return:        Single event or sequence of events.
         """
 
     def close(self) -> None:

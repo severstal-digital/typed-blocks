@@ -16,12 +16,14 @@ Blocks
    :members:
    :special-members:
    :exclude-members: __weakref__
+   :member-order: bysource
 
 Decorators
 ----------
 
 .. automodule:: blocks.decorators
    :members:
+   :member-order: bysource
 
 Scheduler
 ---------
@@ -47,3 +49,4 @@ Runner
    :members:
    :special-members:
    :exclude-members: __weakref__
+   :member-order: bysource
