@@ -178,6 +178,8 @@ class InputTopic(_Topic):
             failover = int(abs(10 / poll_timeout)) or 1
             logger.warning('Using {0} as analog of 10 seconds for batch waiting failover.'.format(failover))
             self.max_empty_polls = failover
+        if with_timedelta is not None and from_beginning is True:
+            raise ValueError("Can't simultaneously read topic from the beginning and from specific timedelta")
 
         super().__init__(name, event, key=key)
         self.group_id = group_id

@@ -179,7 +179,10 @@ def _init_consumers(
         if topic.committable:
             consumer.subscribe([topic.name])
         else:
-            consumer.subscribe([topic.name], from_beginning=topic.from_beginning)
+            if topic.with_timedelta is not None:
+                consumer.subscribe([topic.name], with_timedelta=topic.with_timedelta)
+            else:
+                consumer.subscribe([topic.name], from_beginning=topic.from_beginning)
         consumers[topic] = consumer
     return consumers
 
