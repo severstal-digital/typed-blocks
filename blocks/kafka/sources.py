@@ -66,7 +66,7 @@ class KafkaSource(Source):
         events = []
         for topic, consumer in self.consumers.items():
 
-            if topic.batched:
+            if topic.batched or topic.max_empty_polls:
                 messages = _read_batch(consumer, topic)
             else:
                 messages = consumer.consume(topic.poll_timeout, topic.messages_limit, ignore_keys=topic.ignore_keys)
@@ -188,15 +188,13 @@ def _init_consumers(
 
 
 def _read_batch(consumer: AnyConsumer, topic: InputTopic) -> List[Message]:
-    if topic.read_till is None:
-        messages = _read_topic_till_end(consumer, topic)
-    elif topic.max_empty_polls > 0:
-        messages = _read_topic_till_ts(consumer, topic)
-    else:
-        msg_template = 'Wrong read_till ({0}) or max_empty_polls ({1}) for {2}'
-        logger.warning(msg_template.format(topic.read_till, topic.max_empty_polls, topic.name))
-        return []
-    return messages
+    if topic.read_till is not None:
+        return _read_topic_till_ts(consumer, topic)
+    if topic.max_empty_polls > 0:
+        return _read_topic_till_end(consumer, topic)
+    msg_template = 'Wrong read_till ({0}) or max_empty_polls ({1}) for {2}'
+    logger.warning(msg_template.format(topic.read_till, topic.max_empty_polls, topic.name))
+    return []
 
 
 def _read_topic_till_ts(consumer: AnyConsumer, topic: InputTopic) -> List[Message]:
