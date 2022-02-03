@@ -53,7 +53,7 @@ class KafkaSource(Source):
         self._commit_messages: Dict[InputTopic, Message] = {}
         self._ignore_errors = ignore_errors
 
-        self._prev_poll = []
+        self._prev_poll: Dict[InputTopic, List[Message]] = {}
         out_annotations = {topic.event for topic in topics}
         # No magic, very explicit, aha.
         self.__call__.__annotations__['return'] = List[Union[tuple(out_annotations)]]  # type: ignore
@@ -67,8 +67,8 @@ class KafkaSource(Source):
         self._commit()
 
         # If we've read some messages on previous iteration, we don't want to lose them just because they are too new
-        events = self._prev_poll
-        to_next = []
+        events = []
+        to_next: Dict[InputTopic, List[Message]] = {}
 
         for topic, consumer in self.consumers.items():
             if topic.batched or topic.max_empty_polls:
@@ -81,8 +81,11 @@ class KafkaSource(Source):
                 # Not using CommitEvent as we close enough to consumer itself. R. Reliability. C. Consistency.
                 self._commit_messages[topic] = messages[-1]
 
-            to_next.extend(_make_events(next_poll, topic, self._ignore_errors))
-            events.extend(_make_events(messages, topic, self._ignore_errors))
+            to_next[topic] = next_poll
+
+            prev_events = self._prev_poll.get(topic, [])
+
+            events.extend(_make_events(prev_events + messages, topic, self._ignore_errors))
 
         self._prev_poll = to_next
 
