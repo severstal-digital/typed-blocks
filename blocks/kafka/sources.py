@@ -208,20 +208,21 @@ def _read_batch(consumer: AnyConsumer, topic: InputTopic) -> Tuple[List[Message]
 
 def _read_topic_till_ts(consumer: AnyConsumer, topic: InputTopic) -> Tuple[List[Message], List[Message]]:
     # Search every topic partition till any messages with appropriate ts are polled
-    also_polled = []
     messages = []
+    also_polled = []
     should_read = True
     while should_read:
-        appended = False
-        for msg in consumer.consume(topic.poll_timeout, topic.messages_limit, ignore_keys=topic.ignore_keys):
-            _, ts = msg.timestamp()
-            if ts <= topic.read_till:
-                messages.append(msg)
-                appended = True
-            else:
-                also_polled.append(msg)
-        if appended is False:
-            should_read = False
+        msgs = consumer.consume(topic.poll_timeout, topic.messages_limit, ignore_keys=topic.ignore_keys)
+        if msgs:
+            appended = False
+            for msg in msgs:
+                _, ts = msg.timestamp()
+                if ts <= topic.read_till:
+                    messages.append(msg)
+                    appended = True
+                else:
+                    also_polled.append(msg)
+            should_read = appended is True and len(messages) > 0
     return messages, also_polled
 
 
