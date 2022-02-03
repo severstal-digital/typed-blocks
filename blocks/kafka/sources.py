@@ -1,5 +1,5 @@
 import inspect
-from typing import Dict, List, Type, Union, Optional, Sequence
+from typing import Dict, List, Type, Tuple, Union, Optional, Sequence
 from dataclasses import is_dataclass
 
 from pydantic import ValidationError
@@ -52,6 +52,8 @@ class KafkaSource(Source):
         self.consumers: ConsumersMapping = _init_consumers(topics, config, cls)
         self._commit_messages: Dict[InputTopic, Message] = {}
         self._ignore_errors = ignore_errors
+
+        self._prev_poll = []
         out_annotations = {topic.event for topic in topics}
         # No magic, very explicit, aha.
         self.__call__.__annotations__['return'] = List[Union[tuple(out_annotations)]]  # type: ignore
@@ -63,19 +65,26 @@ class KafkaSource(Source):
         :return:        Single event or sequence of events.
         """
         self._commit()
-        events = []
-        for topic, consumer in self.consumers.items():
 
+        # If we've read some messages on previous iteration, we don't want to lose them just because they are too new
+        events = self._prev_poll
+        to_next = []
+
+        for topic, consumer in self.consumers.items():
             if topic.batched or topic.max_empty_polls:
-                messages = _read_batch(consumer, topic)
+                messages, next_poll = _read_batch(consumer, topic)
             else:
+                next_poll = []
                 messages = consumer.consume(topic.poll_timeout, topic.messages_limit, ignore_keys=topic.ignore_keys)
 
             if topic.commit_regularly and messages:
                 # Not using CommitEvent as we close enough to consumer itself. R. Reliability. C. Consistency.
                 self._commit_messages[topic] = messages[-1]
 
+            to_next.extend(_make_events(next_poll, topic, self._ignore_errors))
             events.extend(_make_events(messages, topic, self._ignore_errors))
+
+        self._prev_poll = to_next
 
         return events
 
@@ -187,18 +196,19 @@ def _init_consumers(
     return consumers
 
 
-def _read_batch(consumer: AnyConsumer, topic: InputTopic) -> List[Message]:
+def _read_batch(consumer: AnyConsumer, topic: InputTopic) -> Tuple[List[Message], List[Message]]:
     if topic.read_till is not None:
         return _read_topic_till_ts(consumer, topic)
     if topic.max_empty_polls > 0:
-        return _read_topic_till_end(consumer, topic)
+        return _read_topic_till_end(consumer, topic), []
     msg_template = 'Wrong read_till ({0}) or max_empty_polls ({1}) for {2}'
     logger.warning(msg_template.format(topic.read_till, topic.max_empty_polls, topic.name))
-    return []
+    return [], []
 
 
-def _read_topic_till_ts(consumer: AnyConsumer, topic: InputTopic) -> List[Message]:
+def _read_topic_till_ts(consumer: AnyConsumer, topic: InputTopic) -> Tuple[List[Message], List[Message]]:
     # Search every topic partition till any messages with appropriate ts are polled
+    also_polled = []
     messages = []
     should_read = True
     while should_read:
@@ -208,9 +218,11 @@ def _read_topic_till_ts(consumer: AnyConsumer, topic: InputTopic) -> List[Messag
             if ts <= topic.read_till:
                 messages.append(msg)
                 appended = True
+            else:
+                also_polled.append(msg)
         if appended is False:
             should_read = False
-    return messages
+    return messages, also_polled
 
 
 def _read_topic_till_end(consumer: AnyConsumer, topic: InputTopic) -> List[Message]:
