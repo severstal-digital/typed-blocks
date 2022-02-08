@@ -128,6 +128,7 @@ class InputTopic(_Topic):
         key: Optional[Type[Event]] = None,
         commit_offset: str = 'never',
         ignore_keys: bool = True,
+        verbose_log_errors: bool = True,
         # per 'physical' consumer parameters, if needed.
         from_beginning: Optional[bool] = False,
         with_timedelta: Optional[datetime.timedelta] = None,
@@ -186,6 +187,7 @@ class InputTopic(_Topic):
         self.from_beginning = from_beginning
         self.commit_offset = commit_offset
         self.ignore_keys = ignore_keys
+        self.verbose_log_errors = verbose_log_errors
         self.with_timedelta = with_timedelta
         self.dummy_events = dummy_events
         self.batch_event = batch_event

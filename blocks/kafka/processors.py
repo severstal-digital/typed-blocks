@@ -86,7 +86,7 @@ class KafkaProducer(Processor):
         """
         Send event-based message to corresponding topic.
 
-        :param event:       Specific event ot be serialized and sent to kafka topic.
+        :param event:       Specific event to be serialized and sent to kafka topic.
         """
         key = vars(event).pop('@key', None)
         event_type = type(event)
@@ -131,7 +131,7 @@ class OffsetCommitter(Processor):
         # ToDo (tribunsky.kir): thus, it is more reliable to put meta on EVERY message.
         #                       As we do not control user's CommitEvent usage, it may misbehave
         if msg_metadata is None:
-            logger.warning('Got nothing ot commit. Please check your commit_offset option for {0}'.format(event.e))
+            logger.warning('Got nothing to commit. Please check your commit_offset option for {0}'.format(event.e))
             return None
         to_commit = msg_metadata.to_commit()
         logger.debug('Really committing! {0} | {1}'.format(msg_metadata, to_commit))

@@ -1,5 +1,5 @@
 import inspect
-from typing import Dict, List, Type, Tuple, Union, Optional, Sequence
+from typing import Any, Dict, List, Type, Tuple, Union, Optional, Sequence
 from dataclasses import is_dataclass
 
 from pydantic import ValidationError
@@ -109,7 +109,20 @@ def _stash_msg_meta(event: Event, msg: Message) -> None:
     event.__dict__['@msg'] = meta
 
 
-def cast(msg: Message, codec: Type[Event], ignore_errors: bool) -> Optional[Event]:
+def shortened(src: Dict[str, Any], n: int = 8) -> Dict[str, Any]:
+    target = n - 3
+    dct = {}
+    for k, v in src.items():
+        dct[k] = v
+        if isinstance(v, (str, bytes)):
+            dots = '...' if isinstance(v, str) else b'...'
+            if len(v) > target:
+                dct[k] = v[:target] + dots
+
+    return dct
+
+
+def cast(msg: Message, codec: Type[Event], *, ignore_errors: bool, verbose_log_errors: bool = True) -> Optional[Event]:
     # It actually works not only against instance, but against cls too
     if is_dataclass(codec):
         # ToDo (tribunsky.kir): move it to external cache OR
@@ -123,7 +136,10 @@ def cast(msg: Message, codec: Type[Event], ignore_errors: bool) -> Optional[Even
     try:
         return codec(**dct)
     except (ValidationError, TypeError) as e:
-        logger.error(e)
+        if verbose_log_errors:
+            logger.error(e)
+        else:
+            logger.error('Failed to extract the message ({0})'.format(shortened(dct)))
         if ignore_errors is False:
             raise
     return None
@@ -136,10 +152,10 @@ def _make_events(
 ) -> List[Event]:
     events: List[Event] = []
     for msg in messages:
-        event = cast(msg, topic.event, ignore_errors)
+        event = cast(msg, topic.event, ignore_errors=ignore_errors, verbose_log_errors=topic.verbose_log_errors)
         if event is not None:
             if topic.commit_manually:
-                # Do not knowing in advance which event should be committed.
+                # Do not know in advance which event should be committed.
                 # So stashing necessary meta to every event from topics which may be committed manually.
                 _stash_msg_meta(event, msg)
             events.append(event)
