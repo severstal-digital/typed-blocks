@@ -1,0 +1,89 @@
+name: pull-request
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install mypy
+    - name: run mypy
+      run: mypy .
+    - name: Install testing dependencies
+      run: python -m pip install pytest
+    - name: run pytest
+      run: pytest -s tests/
+
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.get_tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: '0'
+      - name: Get git tag.
+        id: get_tag
+        # ToDo (tribunsky.kir): replace it with semver autobumper
+        run: |
+          get_version () {
+            local VERSION=''
+            local LAST_GIT_TAG=''
+            LAST_GIT_TAG=$(git tag --merged origin/master | tail -n 1)
+            VERSION=$(echo "${LAST_GIT_TAG}" | grep -P '^v\d+\.\d+.\d+$' | sed 's/^v//')
+            echo "$VERSION"
+          }
+
+          increment_version() {
+            local version=${1}
+            local section=${2}
+            local delimiter=.
+            local array=($(echo "$version" | tr $delimiter '\n'))
+            array[$section]=$((array[$section]+1))
+            echo $(local IFS=$delimiter ; echo "${array[*]}")
+          }
+          
+          VERSION_TAG="$(get_version)"
+          echo "Extracted latest tag from master branch: ${VERSION_TAG}"
+          if [ -z "${VERSION_TAG}" ]; then
+            echo "Couldn't detect any existing revision number. Please, place a tag."
+            exit 1
+          else
+            BUILD_VERSION="$(increment_version ${VERSION_TAG} 2).dev${GITHUB_RUN_NUMBER}"
+            echo "Got revision number for a current build: ${BUILD_VERSION}"
+            echo ::set-output name=tag::"${BUILD_VERSION}"            
+          fi
+
+  deploy:
+    needs: [checks, version]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install packaging dependencies
+      run: pip install build
+    - uses: actions/checkout@v2
+    - name: sed version
+      run: |
+        echo "Got version from vcs: ${{ needs.version.outputs.tag }}"
+        sed -i 's/version = 0.0.0/version = ${{ needs.version.outputs.tag }}/' setup.cfg
+        cat setup.cfg | grep -i version
+    - name: Build package
+      run: python -m build
+    - name: Publish package to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        repository_url: https://test.pypi.org/legacy/
