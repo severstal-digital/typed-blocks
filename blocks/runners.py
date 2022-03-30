@@ -1,3 +1,5 @@
+"""Runners are actually runtime for statically built graph."""
+
 import time
 import asyncio
 import functools
@@ -12,8 +14,24 @@ from blocks.logger import logger
 SyncProcessors = DefaultDict[Type[Event], List[Processor]]
 
 
-class Runner:
+class Runner(object):
+    """
+    Allows to actually run graph.
+
+    - Checks sources for new events,
+    - handles internal queue,
+    - passes events to a specific processors,
+    - check conditions for termination
+    - proceeds actual shutdown of the app.
+    """
+
     def __init__(self, graph: Graph, terminal_event: Optional[Type[Event]]) -> None:
+        """
+        Init runner instance.
+
+        :param graph:           Computational graph to execute.
+        :param terminal_event:  Special event which simply stops execution, when processed.
+        """
         if graph.contains_async_blocks:
             raise RuntimeError('Blocks graph contains async blocks, must be run by AsyncRunner')
 
@@ -24,6 +42,13 @@ class Runner:
         self._terminal_event = terminal_event
 
     def run(self, interval: float, once: bool) -> None:
+        """
+        Start execution.
+
+        :param interval:        Minimal timeout (seconds) between repetition of the whole computational sequence.
+        :param once:            If True, executes the whole computational sequence only once, otherwise won't stop until
+                                specific conditions (such as terminal event) will occur.
+        """
         self._tick()
         if not once:
             while self._alive:
@@ -35,6 +60,7 @@ class Runner:
         self._close_resources()
 
     def stop(self) -> None:
+        """Stop the execution."""
         self._alive = False
 
     def _append_events(self, events: Optional[EventOrEvents]) -> None:
@@ -94,8 +120,16 @@ class Runner:
             self._process_event(event)
 
 
-class AsyncRunner:
+class AsyncRunner(object):
+    """Same as Runner, but for async/await syntax."""
+
     def __init__(self, graph: Graph, terminal_event: Optional[Type[Event]]) -> None:
+        """
+        Init async runner instance.
+
+        :param graph:           Computational graph to execute.
+        :param terminal_event:  Special event which simply stops execution, when processed.
+        """
         self._sources = graph.sources
         self._processors = graph.processors
         self._q: Deque[Event] = deque()
@@ -103,6 +137,13 @@ class AsyncRunner:
         self._terminal_event = terminal_event
 
     async def run(self, interval: float, once: bool) -> None:
+        """
+        Start execution.
+
+        :param interval:        Minimal timeout (seconds) between repetition of the whole computational sequence.
+        :param once:            If True, executes the whole computational sequence only once, otherwise won't stop until
+                                specific conditions (such as terminal event) will occur.
+        """
         await self._tick()
         if not once:
             while self._alive:
@@ -114,6 +155,7 @@ class AsyncRunner:
         await self._close_resources()
 
     def stop(self) -> None:
+        """Stop the execution."""
         self._alive = False
 
     def _append_events(self, events: Optional[EventOrEvents]) -> None:

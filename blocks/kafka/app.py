@@ -25,17 +25,17 @@ class KafkaApp(App):
       >>> # Very dummy replicator
       >>> from pydantic import BaseModel
       >>> from wunderkafka import ConsumerConfig, ProducerConfig
-      >>>
+
       >>> from blocks import Event, processor
       >>> from blocks.kafka import KafkaApp, InputTopic, OutputTopic
-      >>>
-      >>> class MyEvent(Event):
+
+      >>> class MyEvent(BaseModel):
       ...     x: int
-      >>>
+
       >>> @processor
       ... def printer(e: MyEvent) -> None:
       ...     print(e)
-      >>>
+
       >>> consumer_config = ConsumerConfig(...)
       >>> producer_config = ProducerConfig(...)
       >>> topics = [

@@ -47,13 +47,17 @@ class KafkaProducer(Processor):
 
     Example::
 
+      >>> from typing import NamedTuple
+
       >>> from blocks import Event, Graph
       >>> from blocks.kafka import KafkaProducer, OutputTopic
-      >>> class MyEvent(Event):
+
+      >>> class MyEvent(NamedTuple):
       ...     x: int
+
       >>> topics = [OutputTopic('some_topic', MyEvent)]
-      >>> graph = Graph()
-      >>> graph.add_block(KafkaProducer(topics))
+
+      >>> blocks = (KafkaProducer(topics), ...)
     """
 
     def __init__(
@@ -62,7 +66,13 @@ class KafkaProducer(Processor):
         config: Optional[ProducerConfig],
         cls: Type[AnyProducer] = AvroModelProducer,
     ) -> None:
+        """
+        Init KafkaProducer instance.
 
+        :param topics:      Topic to send messages in.
+        :param config:      Failover configuration for producer if there is no configuration per InputTopic.
+        :param cls:         Failover factory to create producer if there is no configuration per InputTopic.
+        """
         self._producers: Dict[Type[Any], AnyProducer] = _assign_producers(topics, config, cls)
         self._topics: Dict[Type[Any], str] = {topic.event: topic.name for topic in topics}
 
@@ -73,12 +83,18 @@ class KafkaProducer(Processor):
         )
 
     def __call__(self, event: Event) -> None:
+        """
+        Send event-based message to corresponding topic.
+
+        :param event:       Specific event to be serialized and sent to kafka topic.
+        """
         key = vars(event).pop('@key', None)
         event_type = type(event)
         topic = self._topics[event_type]
         self._producers[event_type].send_message(topic, event, key)
 
     def close(self) -> None:
+        """Graceful shutdown: flush all producers."""
         for producer in self._producers.values():
             # ToDo (tribunsky.kir): mimic/make public
             producer.flush()
@@ -97,15 +113,14 @@ class OffsetCommitter(Processor):
 
     Example::
 
-      >>> from blocks import Event, Graph
+      >>> from blocks import Event
       >>> from blocks.kafka import KafkaSource, OffsetCommitter
-      >>>
+
       >>> topics = [...]
       >>> consumer = KafkaSource(topics)
       >>> committer = OffsetCommitter(consumer.consumers)
-      >>> graph = Graph()
-      >>> graph.add_block(consumer)
-      >>> graph.add_block(committer)
+
+      >>> blocks = (consumer, committer, ...)
     """
 
     def __init__(self, consumers: ConsumersMapping) -> None:
@@ -116,7 +131,7 @@ class OffsetCommitter(Processor):
         # ToDo (tribunsky.kir): thus, it is more reliable to put meta on EVERY message.
         #                       As we do not control user's CommitEvent usage, it may misbehave
         if msg_metadata is None:
-            logger.warning('Got nothing ot commit. Please check your commit_offset option for {0}'.format(event.e))
+            logger.warning('Got nothing to commit. Please check your commit_offset option for {0}'.format(event.e))
             return None
         to_commit = msg_metadata.to_commit()
         logger.debug('Really committing! {0} | {1}'.format(msg_metadata, to_commit))

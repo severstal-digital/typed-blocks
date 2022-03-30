@@ -69,15 +69,16 @@ class OutputTopic(_Topic):
 
     Example::
 
-      >>> from blocks import Event, Graph
+      >>> from typing import NamedTuple
+
+      >>> from blocks import Event
       >>> from blocks.kafka import KafkaProducer,
-      >>>
-      >>> class MyEvent(Event):
+
+      >>> class MyEvent(NamedTuple):
       ...     x: int
-      >>>
+
       >>> topics = [OutputTopic('some_topic', MyEvent, debug='all')]
-      >>> graph = Graph()
-      >>> graph.add_block(KafkaProducer(topics))
+      >>> blocks = (KafkaProducer(topics), ...)
     """
 
     def __init__(
@@ -106,13 +107,16 @@ class InputTopic(_Topic):
 
     Example::
 
-      >>> from blocks import Event, Graph
+      >>> from typing import NamedTuple
+
+      >>> from blocks import Event
       >>> from blocks.kafka import KafkaSource, InputTopic
-      >>> class MyEvent(Event):
+
+      >>> class MyEvent(NamedTuple):
       ...     x: int
+
       >>> topics = [InputTopic('some_topic', MyEvent, from_beginning=True)]
-      >>> graph = Graph()
-      >>> graph.add_block(KafkaSource(topics))
+      >>> blocks = (KafkaSource(topics), )
     """
 
     def __init__(  # noqa: WPS211  # ToDo (tribunsky.kir): InputTopic overloaded.
@@ -124,6 +128,7 @@ class InputTopic(_Topic):
         key: Optional[Type[Event]] = None,
         commit_offset: str = 'never',
         ignore_keys: bool = True,
+        verbose_log_errors: bool = True,
         # per 'physical' consumer parameters, if needed.
         from_beginning: Optional[bool] = False,
         with_timedelta: Optional[datetime.timedelta] = None,
@@ -174,12 +179,15 @@ class InputTopic(_Topic):
             failover = int(abs(10 / poll_timeout)) or 1
             logger.warning('Using {0} as analog of 10 seconds for batch waiting failover.'.format(failover))
             self.max_empty_polls = failover
+        if with_timedelta is not None and from_beginning is True:
+            raise ValueError("Can't simultaneously read topic from the beginning and from specific timedelta")
 
         super().__init__(name, event, key=key)
         self.group_id = group_id
         self.from_beginning = from_beginning
         self.commit_offset = commit_offset
         self.ignore_keys = ignore_keys
+        self.verbose_log_errors = verbose_log_errors
         self.with_timedelta = with_timedelta
         self.dummy_events = dummy_events
         self.batch_event = batch_event

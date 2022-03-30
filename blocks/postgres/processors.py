@@ -37,11 +37,12 @@ class PostgresWriter(Processor):
 
       >>> from blocks import Graph
       >>> from blocks.postgres import PostgresWriter, Query, Row
+
       >>> class TableRow(Row):
       ...     x: int
+
       >>> queries = [Query('insert into table ({}) values ({})', TableRow)]
-      >>> graph = Graph()
-      >>> graph.add_block(PostgresWriter(queries))
+      >>> blocks = (PostgresWriter(queries), ...)
     """
 
     def __init__(self, queries: List[Query], connection_factory: Callable[[], Connection]) -> None:

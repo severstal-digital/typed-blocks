@@ -1,3 +1,5 @@
+"""Graph - is just static collection of blocks, which is waiting a moment to be executed."""
+
 from typing import Set, List, Type, Optional, Sequence, DefaultDict
 from collections import defaultdict
 
@@ -8,8 +10,17 @@ from blocks.annotations import get_input_events_type, get_output_events_type
 AnyProcessors = DefaultDict[Type[Event], List[AnyProcessor]]
 
 
-class Graph:
+class Graph(object):
+    """Represents computational graph, consisting from the given blocks and events."""
+
     def __init__(self, blocks: Optional[Sequence[Block]] = None) -> None:
+        """
+        Init Graph instance.
+
+        Splits all given blocks into two groups: sources and processors.
+
+        :param blocks:      Sequence of blocks to be added to computational graph.
+        """
         self.sources: List[AnySource] = []
         self.processors: AnyProcessors = defaultdict(list)
 
@@ -20,6 +31,11 @@ class Graph:
                 self.add_block(block)
 
     def add_block(self, block: Block) -> None:
+        """
+        Add block to current graph.
+
+        :param block:       Processor or Source to be included in graph.
+        """
         validate_annotations(block)
         if isinstance(block, (AsyncSource, Source)):
             self.sources.append(block)

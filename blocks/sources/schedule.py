@@ -21,13 +21,11 @@ class Scheduler(Source):
 
       >>> from blocks import Event
       >>> from blocks.sources.schedule import Scheduler
-      >>>
+
       >>> class MyEvent(Event):
       ...     pass
-      >>> processors = [
-      ...     Scheduler(MyEvent).every().minute.at(':30'),
-      ...     ...
-      ...   ]
+
+      >>> blocks = (Scheduler(MyEvent).every().minute.at(':30'), ...)
     """
 
     def __init__(self, scheduled_event: Type[Event]) -> None:

@@ -20,16 +20,19 @@ class RedisStreamsApp(App):
 
     Example::
 
+      >>> from typing import NamedTuple
+
+      >>> from redis import Redis
       >>> from blocks import Event, processor
       >>> from blocks.redis import RedisStreamsApp, InputStream
-      >>>
-      >>> class MyEvent(Event):
+
+      >>> class MyEvent(NamedTuple):
       ...     x: int
-      >>>
+
       >>> @processor
       ... def printer(e: MyEvent) -> None:
       ...     print(e)
-      >>>
+
       >>> streams = [InputStream('some_stream', MyEvent)]
       >>> blocks = [printer()]
       >>> redis = Redis(host=..., port=..., db=..., password=...)

@@ -1,5 +1,5 @@
 import inspect
-from typing import Dict, List, Type, Union, Optional, Sequence
+from typing import Any, Dict, List, Type, Tuple, Union, Optional, Sequence
 from dataclasses import is_dataclass
 
 from pydantic import ValidationError
@@ -17,17 +17,19 @@ class KafkaSource(Source):
     Class represents event source that reads messages from Kafka topics
     and wraps them into given events. On initialization must get list
     of input topics in order to perform arbitrary mapping. In most cases
-    you don't need to use KafkaConsumer directly, KafkaApp can make this for you.
+    you don't need to use KafkaSource directly, KafkaApp can make this for you.
 
     Example::
 
-      >>> from blocks import Event, Graph
+      >>> from blocks import Event
+      >>> from pydantic import BaseModel
       >>> from blocks.kafka import KafkaSource, InputTopic
-      >>> class MyEvent(Event):
+
+      >>> class MyEvent(BaseModel):
       ...     x: int
+
       >>> topics = [InputTopic('some_topic', MyEvent)]
-      >>> graph = Graph()
-      >>> graph.add_block(KafkaSource(topics))
+      >>> blocks = (KafkaSource(topics), )
     """
 
     def __init__(
@@ -38,32 +40,59 @@ class KafkaSource(Source):
         cls: Type[AnyConsumer] = AvroConsumer,
         ignore_errors: bool = True,
     ) -> None:
+        """
+        Init KafkaSource instance.
+
+        :param topics:          List of topics with corresponding settings to subscribe.
+        :param config:          Failover configuration for consumer if there is no configuration per InputTopic.
+        :param cls:             Failover factory to create consumer if there is no configuration per InputTopic.
+        :param ignore_errors:   If True, do not fail during casting messages to events. By design, messages in Kafka may
+                                be produced with totally different schemas, or without any.
+        """
         self.consumers: ConsumersMapping = _init_consumers(topics, config, cls)
         self._commit_messages: Dict[InputTopic, Message] = {}
         self._ignore_errors = ignore_errors
+
+        self._prev_poll: Dict[InputTopic, List[Message]] = {}
         out_annotations = {topic.event for topic in topics}
         # No magic, very explicit, aha.
         self.__call__.__annotations__['return'] = List[Union[tuple(out_annotations)]]  # type: ignore
 
     def __call__(self) -> List[Event]:
-        self._commit()
-        events = []
-        for topic, consumer in self.consumers.items():
+        """
+        Emit messages from all topics as events to the internal queue.
 
-            if topic.batched:
-                messages = _read_batch(consumer, topic)
+        :return:        Single event or sequence of events.
+        """
+        self._commit()
+
+        # If we've read some messages on previous iteration, we don't want to lose them just because they are too new
+        events = []
+        to_next: Dict[InputTopic, List[Message]] = {}
+
+        for topic, consumer in self.consumers.items():
+            if topic.batched or topic.max_empty_polls:
+                messages, next_poll = _read_batch(consumer, topic)
             else:
+                next_poll = []
                 messages = consumer.consume(topic.poll_timeout, topic.messages_limit, ignore_keys=topic.ignore_keys)
 
             if topic.commit_regularly and messages:
                 # Not using CommitEvent as we close enough to consumer itself. R. Reliability. C. Consistency.
                 self._commit_messages[topic] = messages[-1]
 
-            events.extend(_make_events(messages, topic, self._ignore_errors))
+            to_next[topic] = next_poll
+
+            prev_events = self._prev_poll.get(topic, [])
+
+            events.extend(_make_events(prev_events + messages, topic, self._ignore_errors))
+
+        self._prev_poll = to_next
 
         return events
 
     def close(self) -> None:
+        """Graceful shutdown: commit anything that should be committed as in InputTopic configurations."""
         self._commit()
 
     def _commit(self) -> None:
@@ -80,7 +109,20 @@ def _stash_msg_meta(event: Event, msg: Message) -> None:
     event.__dict__['@msg'] = meta
 
 
-def cast(msg: Message, codec: Type[Event], ignore_errors: bool) -> Optional[Event]:
+def shortened(src: Dict[str, Any], n: int = 8) -> Dict[str, Any]:
+    target = n - 3
+    dct = {}
+    for k, v in src.items():
+        dct[k] = v
+        if isinstance(v, (str, bytes)):
+            dots = '...' if isinstance(v, str) else b'...'
+            if len(v) > target:
+                dct[k] = v[:target] + dots
+
+    return dct
+
+
+def cast(msg: Message, codec: Type[Event], *, ignore_errors: bool, verbose_log_errors: bool = True) -> Optional[Event]:
     # It actually works not only against instance, but against cls too
     if is_dataclass(codec):
         # ToDo (tribunsky.kir): move it to external cache OR
@@ -94,7 +136,10 @@ def cast(msg: Message, codec: Type[Event], ignore_errors: bool) -> Optional[Even
     try:
         return codec(**dct)
     except (ValidationError, TypeError) as e:
-        logger.error(e)
+        if verbose_log_errors:
+            logger.error(e)
+        else:
+            logger.error('Failed to extract the message ({0})'.format(shortened(dct)))
         if ignore_errors is False:
             raise
     return None
@@ -107,10 +152,10 @@ def _make_events(
 ) -> List[Event]:
     events: List[Event] = []
     for msg in messages:
-        event = cast(msg, topic.event, ignore_errors)
+        event = cast(msg, topic.event, ignore_errors=ignore_errors, verbose_log_errors=topic.verbose_log_errors)
         if event is not None:
             if topic.commit_manually:
-                # Do not knowing in advance which event should be committed.
+                # Do not know in advance which event should be committed.
                 # So stashing necessary meta to every event from topics which may be committed manually.
                 _stash_msg_meta(event, msg)
             events.append(event)
@@ -162,37 +207,42 @@ def _init_consumers(
         if topic.committable:
             consumer.subscribe([topic.name])
         else:
-            consumer.subscribe([topic.name], from_beginning=topic.from_beginning)
+            if topic.with_timedelta is not None:
+                consumer.subscribe([topic.name], with_timedelta=topic.with_timedelta)
+            else:
+                consumer.subscribe([topic.name], from_beginning=topic.from_beginning)
         consumers[topic] = consumer
     return consumers
 
 
-def _read_batch(consumer: AnyConsumer, topic: InputTopic) -> List[Message]:
-    if topic.read_till is None:
-        messages = _read_topic_till_end(consumer, topic)
-    elif topic.max_empty_polls > 0:
-        messages = _read_topic_till_ts(consumer, topic)
-    else:
-        msg_template = 'Wrong read_till ({0}) or max_empty_polls ({1}) for {2}'
-        logger.warning(msg_template.format(topic.read_till, topic.max_empty_polls, topic.name))
-        return []
-    return messages
+def _read_batch(consumer: AnyConsumer, topic: InputTopic) -> Tuple[List[Message], List[Message]]:
+    if topic.read_till is not None:
+        return _read_topic_till_ts(consumer, topic)
+    if topic.max_empty_polls > 0:
+        return _read_topic_till_end(consumer, topic), []
+    msg_template = 'Wrong read_till ({0}) or max_empty_polls ({1}) for {2}'
+    logger.warning(msg_template.format(topic.read_till, topic.max_empty_polls, topic.name))
+    return [], []
 
 
-def _read_topic_till_ts(consumer: AnyConsumer, topic: InputTopic) -> List[Message]:
+def _read_topic_till_ts(consumer: AnyConsumer, topic: InputTopic) -> Tuple[List[Message], List[Message]]:
     # Search every topic partition till any messages with appropriate ts are polled
     messages = []
+    also_polled = []
     should_read = True
     while should_read:
-        appended = False
-        for msg in consumer.consume(topic.poll_timeout, topic.messages_limit, ignore_keys=topic.ignore_keys):
-            _, ts = msg.timestamp()
-            if ts <= topic.read_till:
-                messages.append(msg)
-                appended = True
-        if appended is False:
-            should_read = False
-    return messages
+        msgs = consumer.consume(topic.poll_timeout, topic.messages_limit, ignore_keys=topic.ignore_keys)
+        if msgs:
+            appended = False
+            for msg in msgs:
+                _, ts = msg.timestamp()
+                if ts <= topic.read_till:
+                    messages.append(msg)
+                    appended = True
+                else:
+                    also_polled.append(msg)
+            should_read = appended is True and len(messages) > 0
+    return messages, also_polled
 
 
 def _read_topic_till_end(consumer: AnyConsumer, topic: InputTopic) -> List[Message]:
