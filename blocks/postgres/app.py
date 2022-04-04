@@ -30,10 +30,12 @@ class PostgresApp(App):
       ... def printer(e: MyTableRow) -> None:
       ...     print(e)
 
-      >>> conn = psycopg2.connect(...)
+      >>> def get_connection():
+      ...     return psycopg2.connect(...)
+
       >>> read_queries = [Query('select * from some_table', MyTableRow)]
       >>> blocks = [printer()]
-      >>> PostgresApp(conn, read_queries, blocks).run()
+      >>> PostgresApp(get_connection, read_queries, blocks).run()
     """
 
     # ToDo (tribunsky.kir): define uniform API: queries in list which are separated in __init__
