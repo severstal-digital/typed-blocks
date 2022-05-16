@@ -57,10 +57,13 @@ class PostgresReader(Source):
 
     Example::
 
+      >>> from dataclasses import dataclass
+      >>>
       >>> from blocks import Graph
       >>> from blocks.postgres import PostgresReader, Query, Row
 
-      >>> class TableRow(Row):
+      >>> @dataclass
+      ... class TableRow(Row):
       ...     x: int
 
       >>> queries = [Query('select * from some_table', TableRow)]

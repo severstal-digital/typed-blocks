@@ -35,10 +35,13 @@ class PostgresWriter(Processor):
 
     Example::
 
+      >>> from dataclasses import dataclass
+      >>>
       >>> from blocks import Graph
       >>> from blocks.postgres import PostgresWriter, Query, Row
 
-      >>> class TableRow(Row):
+      >>> @dataclass
+      ... class TableRow(Row):
       ...     x: int
 
       >>> queries = [Query('insert into table ({}) values ({})', TableRow)]
