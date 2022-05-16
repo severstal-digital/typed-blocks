@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import pytest
 
 from blocks.db.types import Row
-from blocks.db.next.sql import Query
+from blocks.db.next.sql import Query, Dialects
 from blocks.sqlite import SQLiteWriter, SQLiteReader
 
 
@@ -37,12 +37,12 @@ def run_around_tests():
 
 
 def test_read_write(connect) -> None:
-    read_query = Query(TableRow).SELECT('*').FROM('test_table')
+    read_query = Query(TableRow, dialect=Dialects.sqlite).SELECT('*').FROM('test_table')
     reader = SQLiteReader([read_query], connect)
     events = reader()
     assert events == []
 
-    insert_query = Query().INSERT(TableRow).INTO('test_table')
+    insert_query = Query(dialect=Dialects.sqlite).INSERT(TableRow).INTO('test_table')
     writer = SQLiteWriter([insert_query], connect)
     row_original = TableRow(id=1, name='one', text='test')
     writer(row_original)
@@ -50,7 +50,7 @@ def test_read_write(connect) -> None:
     [event] = reader()
     assert event == row_original
 
-    update_query = Query().UPDATE('test_table').SET(TableRow).WHERE('id')
+    update_query = Query(dialect=Dialects.sqlite).UPDATE('test_table').SET(TableRow).WHERE('id')
     writer = SQLiteWriter([update_query], connect)
     row_updated = TableRow(id=1, name='one', text='updated')
 
