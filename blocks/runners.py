@@ -55,9 +55,13 @@ class Runner(object):
                 start = time.perf_counter()
                 self._tick()
                 delta = time.perf_counter() - start - interval
+                logger.debug('Delta to sleep: {0}'.format(delta))
                 if delta < 0:
                     time.sleep(abs(delta))
+            logger.warning('Not alive anymore. Closing all resources...')
         self._close_resources()
+        if not once:
+            logger.warning('Everything is supposed to be closed')
 
     def stop(self) -> None:
         """Stop the execution."""
