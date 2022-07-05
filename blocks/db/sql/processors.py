@@ -50,6 +50,4 @@ class SQLWriter(Processor):
         _exec_queries(conn, query, table)
 
     def close(self) -> None:
-        if not self._closed:
-            self._conn.close()
-            self._closed = True
+        self._closed = True
