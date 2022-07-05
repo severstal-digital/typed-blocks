@@ -124,13 +124,17 @@ def shortened(src: Dict[str, Any], n: int = 8) -> Dict[str, Any]:
 
 def cast(msg: Message, codec: Type[Event], *, ignore_errors: bool, verbose_log_errors: bool = True) -> Optional[Event]:
     # It actually works not only against instance, but against cls too
+    message_value = msg.value()
+    logger.debug('{0}|{1}|{2} (e: {3}): {4}'.format(
+        msg.topic(), msg.partition(), msg.offset(), msg.error(), message_value),
+    )
     if is_dataclass(codec):
         # ToDo (tribunsky.kir): move it to external cache OR
         #                       just do not use internally raw InputTopic's model on every message
         fields = inspect.signature(codec).parameters
-        dct = {k: v for k, v in msg.value().items() if k in fields}
+        dct = {k: v for k, v in message_value.items() if k in fields}
     else:
-        dct = msg.value()
+        dct = message_value
 
     # ToDo (tribunsky.kir): definition of event via `= object` was a really 'nice' idea (no).
     try:
