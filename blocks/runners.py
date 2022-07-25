@@ -1,15 +1,17 @@
 """Runners are actually runtime for statically built graph."""
 
-import time
 import asyncio
 import functools
+import multiprocessing as mp
+import time
 import traceback
-from typing import List, Type, Deque, Optional, Awaitable, DefaultDict, cast
 from collections import deque
+from typing import List, Type, Deque, Optional, Awaitable, DefaultDict, cast, Tuple
 
+from blocks.dto.parallel_event import ParallelEvent
 from blocks.graph import Graph
-from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor
 from blocks.logger import logger
+from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor
 
 SyncProcessors = DefaultDict[Type[Event], List[Processor]]
 
@@ -40,6 +42,8 @@ class Runner(object):
         self._q: Deque[Event] = deque()
         self._alive = True
         self._terminal_event = terminal_event
+        self._parallel_events: mp.Queue[Event] = mp.Queue()
+        self._parallel_processors: List[Tuple[mp.Process, float]] = []
 
     def run(self, interval: float, once: bool) -> None:
         """
@@ -104,24 +108,42 @@ class Runner(object):
         for source in self._sources:
             self._append_events(source())
 
-    def _process_event(self, event: Event) -> None:
-        for processor in self._processors[type(event)]:
+    def _process_parallel_event(self, parallel_event: ParallelEvent) -> None:
+        p = mp.Process(
+            target=lambda *args: self._parallel_events.put_nowait(parallel_event.function(*args)),
+            args=(parallel_event.trigger, ),
+            daemon=parallel_event.daemon
+        )
+        p.start()
+        self._parallel_processors.append((p, parallel_event.timeout))
+
+    def _process_events(self, input_event: Event) -> None:
+        for processor in self._processors[type(input_event)]:
             try:
-                events = processor(event)
+                output_event = processor(input_event)
+                if isinstance(output_event, ParallelEvent):
+                    self._process_parallel_event(output_event)
+                else:
+                    self._append_events(output_event)
             except Exception:
                 self.stop()
                 logger.error('Execution failed during processing the event: {0}({1}) {2}'.format(
-                    processor.__class__.__name__, event.__class__.__name__, event,
+                    processor.__class__.__name__, input_event.__class__.__name__, input_event,
                 ))
                 logger.error(traceback.format_exc())
-            else:
-                self._append_events(events)
+
+        for p, t in self._parallel_processors:
+            p.join(timeout=t)
+
+        while self._parallel_events.empty() is False:
+            event = self._parallel_events.get_nowait()
+            self._append_events(event)
 
     def _tick(self) -> None:
         self._get_new_events()
         while self._q:
             event = self._q.popleft()
-            self._process_event(event)
+            self._process_events(event)
 
 
 class AsyncRunner(object):
