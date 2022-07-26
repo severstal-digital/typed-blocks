@@ -43,7 +43,7 @@ class Runner(object):
         self._alive = True
         self._terminal_event = terminal_event
         self._parallel_events: mp.Queue[Event] = mp.Queue()
-        self._parallel_processors: List[Tuple[mp.Process, float]] = []
+        self._parallel_processors: List[Tuple[mp.Process, float, bool]] = []
 
     def run(self, interval: float, once: bool) -> None:
         """
@@ -112,10 +112,15 @@ class Runner(object):
         p = mp.Process(
             target=lambda *args: self._parallel_events.put_nowait(parallel_event.function(*args)),
             args=(parallel_event.trigger, ),
-            daemon=parallel_event.daemon
+            daemon=parallel_event.daemon,
+            name='{0}({1}) {2}'.format(
+                parallel_event.function.__name__,
+                parallel_event.trigger.__class__.__name__,
+                parallel_event.trigger
+            )
         )
         p.start()
-        self._parallel_processors.append((p, parallel_event.timeout))
+        self._parallel_processors.append((p, parallel_event.timeout, parallel_event.force_terminating))
 
     def _process_events(self, input_event: Event) -> None:
         for processor in self._processors[type(input_event)]:
@@ -132,8 +137,11 @@ class Runner(object):
                 ))
                 logger.error(traceback.format_exc())
 
-        for p, t in self._parallel_processors:
+        for p, t, force_terminate in self._parallel_processors:
             p.join(timeout=t)
+            if p.is_alive() and force_terminate:
+                p.terminate()
+                logger.warning('Parallel processor was terminated by timeout: {0}'.format(p.name))
 
         while self._parallel_events.empty() is False:
             event = self._parallel_events.get_nowait()

@@ -82,7 +82,12 @@ def processor(function: ProcessorFunction) -> Type[Processor]:
     return T
 
 
-def parallel_processor(function: ProcessorFunction, *, timeout: float = 5.0, daemon: bool = True) -> Type[Processor]:
+def parallel_processor(function: ProcessorFunction,
+                       *,
+                       timeout: float = 5.0,
+                       daemon: bool = True,
+                       force_terminating: bool = True
+                       ) -> Type[Processor]:
     """
     Make a Parallel event from the decorated function.
 
@@ -101,19 +106,21 @@ def parallel_processor(function: ProcessorFunction, *, timeout: float = 5.0, dae
 
       >>> blocks = (printer(), ...)
 
-    :param function:    Given function with a single argument (event).
-                        Function may return None, event or sequence of events.
+    :param function:            Given function with a single argument (event).
+                                Function may return None, event or sequence of events.
 
-    param timeout       Param for join process.
-    param daemon        Allows us daemon processes.
-    :return:            Factory which creates a Processor.
+    param timeout:              Param for join process.
+    param daemon:               Allows us daemon processes.
+    param force_terminating:    Allows force termiante process if this didn`t end by timeout
+    :return:                    Factory which creates a Processor.
     """
     def _call(self: Processor, event: Event) -> Optional[EventOrEvents]:
         return ParallelEvent(
             function=function,
             trigger=event,
             timeout=timeout,
-            daemon=daemon
+            daemon=daemon,
+            force_terminating=force_terminating
         )
 
     T = type(f'{function.__name__}', (Processor, ), {'__call__': _call})

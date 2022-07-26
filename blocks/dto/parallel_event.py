@@ -10,3 +10,4 @@ class ParallelEvent(Event):
     trigger: EventOrEvents
     timeout: float
     daemon: bool
+    force_terminating: bool
