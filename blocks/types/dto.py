@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable, Any, Optional
 
-from blocks.types import Event, EventOrEvents
+from blocks.types.base import Event, EventOrEvents
 
 
 @dataclass

@@ -8,10 +8,9 @@ import traceback
 from collections import deque
 from typing import List, Type, Deque, Optional, Awaitable, DefaultDict, cast, Tuple
 
-from blocks.dto.parallel_event import ParallelEvent
 from blocks.graph import Graph
 from blocks.logger import logger
-from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor
+from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor, ParallelEvent
 
 SyncProcessors = DefaultDict[Type[Event], List[Processor]]
 

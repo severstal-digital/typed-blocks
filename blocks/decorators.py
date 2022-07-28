@@ -2,8 +2,7 @@
 
 from typing import Any, Type, Callable, Optional, Awaitable
 
-from blocks.dto.parallel_event import ParallelEvent
-from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor
+from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor, ParallelEvent
 
 # ToDo (tribunsky.kir): redo annotations to avoid "error: Untyped decorator makes function <...>" untyped
 # ToDo (tribunsky.kir): remove closures and explicit code duplication
