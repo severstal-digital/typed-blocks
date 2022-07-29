@@ -2,7 +2,7 @@
 
 from typing import Any, Type, Callable, Optional, Awaitable
 
-from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor
+from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor, ParallelEvent
 
 # ToDo (tribunsky.kir): redo annotations to avoid "error: Untyped decorator makes function <...>" untyped
 # ToDo (tribunsky.kir): remove closures and explicit code duplication
@@ -55,11 +55,11 @@ def processor(function: ProcessorFunction) -> Type[Processor]:
 
     Example::
 
-      >>> from typing import NamedTuple
+      >>> from typing import Event
 
       >>> from blocks import processor
 
-      >>> class MyEvent(NamedTuple):
+      >>> class MyEvent(Event):
       ...     ...
 
       >>> @processor
@@ -75,6 +75,52 @@ def processor(function: ProcessorFunction) -> Type[Processor]:
 
     def _call(self: Processor, event: Event) -> Optional[EventOrEvents]:
         return function(event)
+
+    T = type(f'{function.__name__}', (Processor, ), {'__call__': _call})
+    T.__call__.__annotations__ = function.__annotations__
+    return T
+
+
+def parallel_processor(function: ProcessorFunction,
+                       *,
+                       timeout: float = 5.0,
+                       daemon: bool = True,
+                       force_terminating: bool = True
+                       ) -> Type[Processor]:
+    """
+    Make a Parallel event from the decorated function.
+
+    Example::
+      >>> from dataclasses import dataclass
+
+      >>> from blocks import processor
+
+      >>> @dataclass
+      >>> class MyEvent:
+      ...     ...
+
+      >>> @parallel_processor
+      ... def printer(event: MyEvent) -> None:
+      ...     print(event)
+
+      >>> blocks = (printer(), ...)
+
+    :param function:            Given function with a single argument (event).
+                                Function may return None, event or sequence of events.
+
+    param timeout:              Param for join process.
+    param daemon:               Allows us daemon processes.
+    param force_terminating:    Allows force termiante process if this didn`t end by timeout
+    :return:                    Factory which creates a Processor.
+    """
+    def _call(self: Processor, event: Event) -> Optional[EventOrEvents]:
+        return ParallelEvent(
+            function=function,
+            trigger=event,
+            timeout=timeout,
+            daemon=daemon,
+            force_terminating=force_terminating
+        )
 
     T = type(f'{function.__name__}', (Processor, ), {'__call__': _call})
     T.__call__.__annotations__ = function.__annotations__
