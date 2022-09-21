@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from typing import Optional, Union
+
 from blocks import Event, Graph
 from blocks import processor
 
@@ -31,4 +33,17 @@ def test_event_in_graph() -> None:
     graph.add_block(printer())
 
     assert MyEvent not in graph.outputs
+    assert MyOtherEvent in graph.outputs
+
+
+@processor
+def optional_list_processor(event: MyEvent) -> Optional[list[Union[MyEvent, MyOtherEvent]]]:
+    return [event, MyOtherEvent(event.x, 1.0)]
+
+
+def test_event_in_graph_specific_annotation() -> None:
+    graph = Graph()
+    graph.add_block(optional_list_processor())
+
+    assert MyEvent in graph.outputs
     assert MyOtherEvent in graph.outputs
