@@ -27,3 +27,7 @@ Available extras
      - dependencies for blocks.redis.RedisStreamsApp
    * - postgres
      - dependencies for blocks.postgres.PostgresApp
+   * - graph_base
+     - dependencies for blocks.graph.Graph
+   * - graphvis
+     - dependencies for blocks.graph.Graph
