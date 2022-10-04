@@ -1,13 +1,22 @@
 """Graph - is just static collection of blocks, which is waiting a moment to be executed."""
 
-from typing import Set, List, Type, Optional, Sequence, DefaultDict
+from typing import Set, List, Type, Optional, Sequence
 from collections import defaultdict
+try:
+    from graphviz import ExecutableNotFound
+except ImportError:
+    HAS_GRAPHVIZ = False
+else:
+    HAS_GRAPHVIZ = True
 
-from blocks.types import Block, Event, Source, AnySource, Processor, AsyncSource, AnyProcessor, AsyncProcessor
+from matplotlib import pyplot as plt
+
+from blocks.logger import logger
+from blocks.graph_utils import build_graph, build_by_graph_vis
+from blocks.types import Block, Event, Source, AnySource, Processor, AsyncSource, AsyncProcessor
+from blocks.types.base import AnyProcessors
 from blocks.validation import validate_annotations
 from blocks.annotations import get_input_events_type, get_output_events_type
-
-AnyProcessors = DefaultDict[Type[Event], List[AnyProcessor]]
 
 
 class Graph(object):
@@ -52,6 +61,41 @@ class Graph(object):
                 'Wrong block type: {0}, should be AsyncSource, Source, AsyncProcessor or Processor subclass'.format(
                     type(block),
                 ),
+            )
+
+    def save_visualization(self, file_name: str = 'graph') -> None:
+        """
+        Build graph by using NetworkX and render by matplotlib
+        saves default 'graph.png' visualization on disk in the root folder
+
+        :param file_name:   name of saved file (default: 'graph'.png)
+
+        """
+        try:
+            build_graph(self.blocks, self.processors)
+
+            plt.axis('off')
+            plt.savefig(file_name, dpi=100)
+        except Exception as ex:
+            logger.error(ex)
+
+    def save_by_graph_vis(self) -> None:
+        """
+        Build graphviz Digraph self representation
+        and if renderer installed in the system saves
+        'DAG.svg' visualization on disk in the root folder
+        """
+        if not HAS_GRAPHVIZ:
+            logger.error('Install the graphviz package before using')
+            raise ImportError('Install the graphviz package before using')
+        g = build_by_graph_vis(self.blocks, self.processors)
+        try:
+            g.render(cleanup=True)
+        except ExecutableNotFound as exc:
+            logger.error(exc)
+            logger.error(
+                "Can't render graph visualization, "
+                "make sure that graphviz C-library installed in your system"
             )
 
     @property
