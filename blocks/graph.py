@@ -1,26 +1,14 @@
 """Graph - is just static collection of blocks, which is waiting a moment to be executed."""
 
-from typing import Set, List, Type, Optional, Sequence
+from typing import Set, List, Type, Optional, Sequence, Union
 from collections import defaultdict
-try:
-    from graphviz import ExecutableNotFound
-except ImportError:
-    HAS_GRAPHVIZ = False
-else:
-    HAS_GRAPHVIZ = True
 
-try:
-    import networkx
-    from matplotlib import pyplot as plt
-except ImportError:
-    HAS_MATPLOTLIB_AND_NETWORKX = False
-else:
-    HAS_MATPLOTLIB_AND_NETWORKX = True
-
+from blocks.graph_utils import build_graph
 from blocks.logger import logger
-from blocks.graph_utils import build_graph, build_by_graph_vis
+
 from blocks.types import Block, Event, Source, AnySource, Processor, AsyncSource, AsyncProcessor
 from blocks.types.base import AnyProcessors
+from blocks.types.graph import RenderingKernelType
 from blocks.validation import validate_annotations
 from blocks.annotations import get_input_events_type, get_output_events_type
 
@@ -69,44 +57,30 @@ class Graph(object):
                 ),
             )
 
-    def save_visualization(self, file_name: str = 'graph') -> None:
+    def save_visualization(
+        self,
+        rendering_type: Union[str, RenderingKernelType] = RenderingKernelType.matplotlib
+    ) -> None:
         """
         Build graph by using NetworkX and render by matplotlib
-        saves default 'graph.png' visualization on disk in the root folder
-
-        :param file_name:   name of saved file (default: 'graph'.png)
-
-        """
-        if not HAS_MATPLOTLIB_AND_NETWORKX:
-            logger.error('Install the NetworkX and matplotlib packages before using')
-            raise ImportError('Install the NetworkX and matplotlib packages before using')
-
-        try:
-            build_graph(self.blocks, self.processors)
-            plt.axis('off')
-            plt.savefig(file_name, dpi=100)
-        except Exception as ex:
-            logger.error(ex)
-            raise ex
-
-    def save_by_graph_vis(self) -> None:
-        """
+        saves default 'GRAPH.png' visualization on disk in the root folder
+        or
         Build graphviz Digraph self representation
         and if renderer installed in the system saves
         'DAG.svg' visualization on disk in the root folder
+
+        :param rendering_type: string or Enum type
+            string only one of ['matplotlib', 'graphviz']
         """
-        if not HAS_GRAPHVIZ:
-            logger.error('Install the graphviz package before using')
-            raise ImportError('Install the graphviz package before using')
-        g = build_by_graph_vis(self.blocks, self.processors)
+        _types = [RenderingKernelType.matplotlib, RenderingKernelType.graphviz]
+        if rendering_type not in _types:
+            raise ValueError('Bad value for the argument, the value must be one of [matplotlib, graphviz]')
         try:
-            g.render(cleanup=True)
-        except ExecutableNotFound as exc:
-            logger.error(exc)
-            logger.error(
-                "Can't render graph visualization, "
-                "make sure that graphviz C-library installed in your system"
-            )
+            build_graph(self.blocks, self.processors, rendering_type)
+        except RuntimeError as ex:
+            raise ex
+        except Exception as ex:
+            logger.error(ex)
 
     @property
     def contains_async_blocks(self) -> bool:

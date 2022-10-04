@@ -1,5 +1,8 @@
+import sys
 from dataclasses import dataclass
 from typing import Optional, Union, List
+
+import pytest
 
 from blocks import Event, Graph
 from blocks import processor
@@ -37,7 +40,7 @@ def test_event_in_graph() -> None:
 
 
 @processor
-def optional_list_processor(event: MyEvent) -> Optional[List[Union[MyEvent, MyOtherEvent]]]:
+def optional_list_processor(event: MyEvent) -> Optional[list[Union[MyEvent, MyOtherEvent]]]:
     return [event, MyOtherEvent(event.x, 1.0)]
 
 

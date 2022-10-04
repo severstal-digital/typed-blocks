@@ -2,8 +2,10 @@ import os.path
 from dataclasses import dataclass
 from typing import Union
 
+import pytest
 
 from blocks import source, processor, Graph
+from blocks.types.graph import RenderingKernelType
 
 
 @dataclass
@@ -56,5 +58,8 @@ def Predictor(e: Union[MappingWithSize, Meta]) -> OutputMapping:
 def test_event_in_graph_specific_annotation() -> None:
     blocks = (FastKafkaConsumerMessages(), ConsumerMeta(), MapperSize(), Predictor())
     graph = Graph(blocks)
-    graph.save_visualization()
-    assert os.path.exists('./graph.png')
+    graph.save_visualization(rendering_type=RenderingKernelType.matplotlib)
+    assert os.path.exists('./GRAPH.png')
+
+    with pytest.raises(RuntimeError):
+        graph.save_visualization(rendering_type=RenderingKernelType.graphviz)
