@@ -1,13 +1,16 @@
 """Graph - is just static collection of blocks, which is waiting a moment to be executed."""
 
-from typing import Set, List, Type, Optional, Sequence, DefaultDict
+from typing import Set, List, Type, Optional, Sequence, Union
 from collections import defaultdict
 
-from blocks.types import Block, Event, Source, AnySource, Processor, AsyncSource, AnyProcessor, AsyncProcessor
+from blocks.graph_utils import build_graph
+from blocks.logger import logger
+
+from blocks.types import Block, Event, Source, AnySource, Processor, AsyncSource, AsyncProcessor
+from blocks.types.base import AnyProcessors
+from blocks.types.graph import RenderingKernelType
 from blocks.validation import validate_annotations
 from blocks.annotations import get_input_events_type, get_output_events_type
-
-AnyProcessors = DefaultDict[Type[Event], List[AnyProcessor]]
 
 
 class Graph(object):
@@ -53,6 +56,31 @@ class Graph(object):
                     type(block),
                 ),
             )
+
+    def save_visualization(
+        self,
+        rendering_type: Union[str, RenderingKernelType] = RenderingKernelType.matplotlib
+    ) -> None:
+        """
+        Build graph by using NetworkX and render by matplotlib
+        saves default 'GRAPH.png' visualization on disk in the root folder
+        or
+        Build graphviz Digraph self representation
+        and if renderer installed in the system saves
+        'DAG.svg' visualization on disk in the root folder
+
+        :param rendering_type: string or Enum type
+            string only one of ['matplotlib', 'graphviz']
+        """
+        _types = [RenderingKernelType.matplotlib, RenderingKernelType.graphviz]
+        if rendering_type not in _types:
+            raise ValueError('Bad value for the argument, the value must be one of [matplotlib, graphviz]')
+        try:
+            build_graph(self.blocks, self.processors, rendering_type)
+        except RuntimeError as ex:
+            raise ex
+        except Exception as ex:
+            logger.error(ex)
 
     @property
     def contains_async_blocks(self) -> bool:

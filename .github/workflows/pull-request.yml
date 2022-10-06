@@ -22,7 +22,7 @@ jobs:
 #    - name: run mypy
 #      run: mypy .
     - name: Install testing dependencies
-      run: python -m pip install pytest
+      run: python -m pip install pytest networkx matplotlib
     - name: run pytest
       run: pytest -s tests/
 
