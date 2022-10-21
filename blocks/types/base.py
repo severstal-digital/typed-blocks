@@ -5,7 +5,7 @@ Finally, all functions, decorated with :code:`@source` or :code:`@processor` are
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Union, Iterable, Optional, DefaultDict, Type, List
+from typing import Any, Awaitable, Callable, DefaultDict, Iterable, List, Optional, Type, Union
 
 
 class Event(object):
@@ -150,3 +150,8 @@ AnySource = Union[AsyncSource, Source]
 AnyProcessor = Union[AsyncProcessor, Processor]
 Block = Union[AnySource, AnyProcessor]
 AnyProcessors = DefaultDict[Type[Event], List[AnyProcessor]]
+
+SourceFunction = Callable[[], EventOrEvents]
+SourceAwaitable = Callable[[], Awaitable[EventOrEvents]]
+ProcessorFunction = Callable[[Any], Optional[EventOrEvents]]
+ProcessorAwaitable = Callable[[Any], Awaitable[Optional[EventOrEvents]]]

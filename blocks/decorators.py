@@ -1,16 +1,15 @@
 """Handful decorators to create *Sources* and *Processors* quickly."""
+import multiprocessing as mp
+import queue
+from typing import List, Optional, Type
 
-from typing import Any, Type, Callable, Optional, Awaitable
+from blocks.sources.subprocess import SubProcess
+from blocks.types import AsyncProcessor, AsyncSource, Event, EventOrEvents, ParallelEvent, Processor, \
+    ProcessorAwaitable, ProcessorFunction, Source, SourceAwaitable, SourceFunction
 
-from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor, ParallelEvent
 
 # ToDo (tribunsky.kir): redo annotations to avoid "error: Untyped decorator makes function <...>" untyped
 # ToDo (tribunsky.kir): remove closures and explicit code duplication
-
-SourceFunction = Callable[[], EventOrEvents]
-SourceAwaitable = Callable[[], Awaitable[EventOrEvents]]
-ProcessorFunction = Callable[[Any], Optional[EventOrEvents]]
-ProcessorAwaitable = Callable[[Any], Awaitable[Optional[EventOrEvents]]]
 
 
 def source(function: SourceFunction) -> Type[Source]:
@@ -76,9 +75,55 @@ def processor(function: ProcessorFunction) -> Type[Processor]:
     def _call(self: Processor, event: Event) -> Optional[EventOrEvents]:
         return function(event)
 
-    T = type(f'{function.__name__}', (Processor, ), {'__call__': _call})
+    T = type(f'{function.__name__}', (Processor,), {'__call__': _call})
     T.__call__.__annotations__ = function.__annotations__
     return T
+
+
+class sub_processor(Processor):
+    """Create Processor from given processor function,
+    that executes the function in separate system process.
+    Function must have single annotated argument,
+    which inherits Event. Also function must return None,
+    single event or multiple events.
+    Example::
+
+      >>> from blocks import parallel_processor
+      >>> class MyEvent(Event):
+      ...     pass
+      >>> @sub_processor
+      ... def printer(event: MyEvent) -> None:
+      ...     print(event)
+      >>> processors = [
+      ...     printer,
+      ...     ...
+      ...   ]
+
+    """
+
+    def __init__(self, function: ProcessorFunction) -> None:
+        self._input_queue: mp.Queue[Event] = mp.Queue()
+        self._output_queue: mp.Queue[Event] = mp.Queue()
+        self._subprocess = SubProcess(self._input_queue, self._output_queue, function)
+        self._subprocess.start()
+        self.__call__.__annotations__['return'] = function.__annotations__['return']
+        input_event_type = next(iter(function.__annotations__.values()))
+        self.__call__.__annotations__['event'] = input_event_type
+
+    def _get_outputs(self) -> List[Event]:
+        output_events = []
+        while self._output_queue.qsize() > 0:
+            try:
+                while True:
+                    event = self._output_queue.get(block=False)
+                    output_events.append(event)
+            except queue.Empty:
+                continue
+        return output_events
+
+    def __call__(self, event: Event) -> List[Event]:
+        self._input_queue.put(event)
+        return self._get_outputs()
 
 
 def parallel_processor(function: ProcessorFunction,

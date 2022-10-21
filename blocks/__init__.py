@@ -1,5 +1,5 @@
 from blocks.app import App
-from blocks.decorators import source, processor, async_source, async_processor, parallel_processor
+from blocks.decorators import async_processor, async_source, parallel_processor, processor, source, sub_processor
 from blocks.graph import Graph
-from blocks.runners import Runner, AsyncRunner
-from blocks.types import Block, Event, Source, Processor, AsyncSource, AsyncProcessor
+from blocks.runners import AsyncRunner, Runner
+from blocks.types import AsyncProcessor, AsyncSource, Block, Event, Processor, Source
