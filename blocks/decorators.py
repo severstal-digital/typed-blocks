@@ -88,16 +88,21 @@ class sub_processor(Processor):
     single event or multiple events.
     Example::
 
-      >>> from blocks import parallel_processor
+      >>> from blocks import sub_processor
+
+
       >>> class MyEvent(Event):
       ...     pass
+
       >>> @sub_processor
       ... def printer(event: MyEvent) -> None:
       ...     print(event)
+
+
       >>> processors = [
       ...     printer,
       ...     ...
-      ...   ]
+      ...]
 
     """
 
