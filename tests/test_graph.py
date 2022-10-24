@@ -39,12 +39,12 @@ def test_event_in_graph() -> None:
     assert MyOtherEvent in graph.outputs
 
 
-@processor
-def optional_list_processor(event: MyEvent) -> Optional[list[Union[MyEvent, MyOtherEvent]]]:
-    return [event, MyOtherEvent(event.x, 1.0)]
-
-
+@pytest.mark.skipif(sys.version_info < (3,9), reason="requires python3.9")
 def test_event_in_graph_specific_annotation() -> None:
+    @processor
+    def optional_list_processor(event: MyEvent) -> Optional[list[Union[MyEvent, MyOtherEvent]]]:
+        return [event, MyOtherEvent(event.x, 1.0)]
+
     graph = Graph()
     graph.add_block(optional_list_processor())
 
