@@ -13,7 +13,7 @@ jobs:
         python-version: [ '3.7', '3.8', '3.9', '3.10', '3.11' ]
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
@@ -35,7 +35,7 @@ jobs:
       tag: ${{ steps.get_tag.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: '0'
       - name: Get git tag.
@@ -76,7 +76,7 @@ jobs:
     steps:
     - name: Install packaging dependencies
       run: pip install build
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: sed version
       run: |
         echo "Got version from vcs: ${{ needs.version.outputs.tag }}"
