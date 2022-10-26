@@ -1,11 +1,8 @@
 import sys
+from typing import Union, Optional
 from dataclasses import dataclass
-from typing import Optional, Union, List
 
-import pytest
-
-from blocks import Event, Graph
-from blocks import processor
+from blocks import Event, Graph, processor
 
 
 @dataclass
@@ -39,14 +36,15 @@ def test_event_in_graph() -> None:
     assert MyOtherEvent in graph.outputs
 
 
-@processor
-def optional_list_processor(event: MyEvent) -> Optional[list[Union[MyEvent, MyOtherEvent]]]:
-    return [event, MyOtherEvent(event.x, 1.0)]
+if sys.version_info >= (3, 9):
+    @processor
+    def optional_list_processor(event: MyEvent) -> Optional[list[Union[MyEvent, MyOtherEvent]]]:
+        return [event, MyOtherEvent(event.x, 1.0)]
 
 
-def test_event_in_graph_specific_annotation() -> None:
-    graph = Graph()
-    graph.add_block(optional_list_processor())
+    def test_event_in_graph_specific_annotation() -> None:
+        graph = Graph()
+        graph.add_block(optional_list_processor())
 
-    assert MyEvent in graph.outputs
-    assert MyOtherEvent in graph.outputs
+        assert MyEvent in graph.outputs
+        assert MyOtherEvent in graph.outputs
