@@ -67,7 +67,7 @@ jobs:
           else
             BUILD_VERSION="$(increment_version ${VERSION_TAG} 2).dev${GITHUB_RUN_NUMBER}"
             echo "Got revision number for a current build: ${BUILD_VERSION}"
-            echo ::set-output name=tag::"${BUILD_VERSION}"            
+            echo tag="${BUILD_VERSION}" >> $GITHUB_OUTPUT
           fi
 
   deploy:
