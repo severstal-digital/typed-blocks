@@ -1,9 +1,10 @@
 """App with given blocks - is all that you need to start you application in most cases."""
 
+import multiprocessing as mp
 from typing import Type, Optional, Sequence
 
 from blocks.graph import Graph
-from blocks.types import Block, Event
+from blocks.types import Block, Event, TypeOfProcessor, Processor
 from blocks.runners import Runner, AsyncRunner
 from blocks.validation import validate_blocks
 
