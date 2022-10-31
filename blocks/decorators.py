@@ -1,8 +1,9 @@
 """Handful decorators to create *Sources* and *Processors* quickly."""
 
-from typing import Any, Type, Callable, Optional, Awaitable
+from typing import Any, Awaitable, Callable, Optional, Type
 
-from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor, ParallelEvent
+from blocks.types import AsyncProcessor, AsyncSource, Event, EventOrEvents, ParallelEvent, Processor, Source, \
+    TypeOfProcessor
 
 # ToDo (tribunsky.kir): redo annotations to avoid "error: Untyped decorator makes function <...>" untyped
 # ToDo (tribunsky.kir): remove closures and explicit code duplication
@@ -76,24 +77,19 @@ def processor(function: ProcessorFunction) -> Type[Processor]:
     def _call(self: Processor, event: Event) -> Optional[EventOrEvents]:
         return function(event)
 
-    T = type(f'{function.__name__}', (Processor, ), {'__call__': _call})
+    T = type(f'{function.__name__}', (Processor, ), {'__call__': _call, 'type_of_processor': TypeOfProcessor.SYNC})
     T.__call__.__annotations__ = function.__annotations__
     return T
 
 
-def parallel_processor(function: ProcessorFunction,
-                       *,
-                       timeout: float = 5.0,
-                       daemon: bool = True,
-                       force_terminating: bool = True
-                       ) -> Type[Processor]:
+def parallel_processor(function: ProcessorFunction) -> Type[Processor]:
     """
     Make a Parallel event from the decorated function.
 
     Example::
       >>> from dataclasses import dataclass
 
-      >>> from blocks import processor
+      >>> from blocks import parallel_processor
 
       >>> @dataclass
       >>> class MyEvent:
@@ -114,15 +110,9 @@ def parallel_processor(function: ProcessorFunction,
     :return:                    Factory which creates a Processor.
     """
     def _call(self: Processor, event: Event) -> Optional[EventOrEvents]:
-        return ParallelEvent(
-            function=function,
-            trigger=event,
-            timeout=timeout,
-            daemon=daemon,
-            force_terminating=force_terminating
-        )
+        return ParallelEvent(function=function, trigger=event)
 
-    T = type(f'{function.__name__}', (Processor, ), {'__call__': _call})
+    T = type(f'{function.__name__}', (Processor, ), {'__call__': _call, 'type_of_processor': TypeOfProcessor.PARALLEL})
     T.__call__.__annotations__ = function.__annotations__
     return T
 

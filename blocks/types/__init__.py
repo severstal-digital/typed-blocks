@@ -6,5 +6,6 @@ from blocks.types.base import (Event,
                                Source,
                                AsyncSource,
                                AnySource,
-                               Block)
+                               Block,
+                               TypeOfProcessor)
 from blocks.types.dto import ParallelEvent
