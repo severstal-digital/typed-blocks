@@ -1,10 +1,17 @@
 """Handful decorators to create *Sources* and *Processors* quickly."""
 
-from typing import Any, Awaitable, Callable, Optional, Type
+from typing import Any, Type, Callable, Optional, Awaitable
 
-from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, ParallelEvent, AsyncProcessor
-from blocks.types import AsyncProcessor, AsyncSource, Event, EventOrEvents, ParallelEvent, Processor, Source, \
-    TypeOfProcessor
+from blocks.types import (
+    Event,
+    Source,
+    Processor,
+    AsyncSource,
+    EventOrEvents,
+    ParallelEvent,
+    AsyncProcessor,
+    TypeOfProcessor,
+)
 
 # ToDo (tribunsky.kir): redo annotations to avoid "error: Untyped decorator makes function <...>" untyped
 # ToDo (tribunsky.kir): remove closures and explicit code duplication

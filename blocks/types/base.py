@@ -4,9 +4,9 @@ Blocks - *Sources* and *Processors* - are a backbone of you app.
 Finally, all functions, decorated with :code:`@source` or :code:`@processor` are reborn to these classes.
 """
 
-from enum import Enum
 from abc import ABC, abstractmethod
-from typing import Any, List, Type, Union, Iterable, Optional, DefaultDict
+from enum import Enum
+from typing import Any, Set, List, Type, Union, Iterable, Optional, DefaultDict
 
 Event = object
 

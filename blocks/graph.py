@@ -5,11 +5,7 @@ from collections import defaultdict
 
 from blocks.types import Block, Event, Source, AnySource, Processor, AsyncSource, AsyncProcessor
 from blocks.logger import logger
-
-from blocks.types import Block, Event, Source, AnySource, Processor, AsyncSource, AsyncProcessor
 from blocks.types.base import AnyProcessors, TypeOfProcessor
-from blocks.types.graph import RenderingKernelType
-from blocks.types.base import AnyProcessors
 from blocks.validation import validate_annotations
 from blocks.annotations import get_input_events_type, get_output_events_type
 from blocks.graph_utils import build_graph

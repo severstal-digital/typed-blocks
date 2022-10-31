@@ -5,16 +5,13 @@ import asyncio
 import functools
 import traceback
 import multiprocessing as mp
-from typing import List, Type, Deque, Tuple, Optional, Awaitable, DefaultDict, cast
+from typing import List, Type, Deque, Tuple, Union, Optional, Awaitable, DefaultDict, cast
 from collections import deque
-from typing import List, Type, Deque, Optional, Awaitable, DefaultDict, cast, Union
 
 from blocks.graph import Graph
 from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, ParallelEvent, AsyncProcessor
 from blocks.logger import logger
-from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor, ParallelEvent
 from blocks.sources.parallel_processor import run_parallel_processor
-
 
 SyncProcessors = DefaultDict[Type[Event], List[Processor]]
 
