@@ -25,7 +25,7 @@ jobs:
       run: pytest -s tests/
     - name: run mypy
       run: |
-        python -m pip install pytest
+        python -m pip install mypy
         python -m mypy --config setup.cfg . --exclude examples
     - name: Install testing dependencies (full)
       run: python -m pip install -r tests/requirements/${{ matrix.python-version }}.txt
