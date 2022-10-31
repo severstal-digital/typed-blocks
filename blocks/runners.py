@@ -7,10 +7,14 @@ import traceback
 import multiprocessing as mp
 from typing import List, Type, Deque, Tuple, Optional, Awaitable, DefaultDict, cast
 from collections import deque
+from typing import List, Type, Deque, Optional, Awaitable, DefaultDict, cast, Union
 
 from blocks.graph import Graph
 from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, ParallelEvent, AsyncProcessor
 from blocks.logger import logger
+from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor, ParallelEvent
+from blocks.sources.parallel_processor import run_parallel_processor
+
 
 SyncProcessors = DefaultDict[Type[Event], List[Processor]]
 
@@ -40,9 +44,8 @@ class Runner(object):
         self._processors = cast(SyncProcessors, graph.processors)
         self._q: Deque[Event] = deque()
         self._alive = True
+        self._pool: mp.Pool = mp.Pool(graph.count_of_parallel_tasks) if graph.count_of_parallel_tasks > 0 else None
         self._terminal_event = terminal_event
-        self._parallel_events: mp.Queue[Event] = mp.Queue()
-        self._parallel_processors: List[Tuple[mp.Process, float, bool]] = []
 
     def run(self, interval: float, once: bool) -> None:
         """
@@ -86,7 +89,12 @@ class Runner(object):
             return True
         return False
 
+    def _close_pool(self) -> None:
+        if self._pool is not None:
+            self._pool.terminate()
+
     def _close_resources(self) -> None:
+        self._close_pool()
         self._close_sources()
         self._close_processors()
 
@@ -107,27 +115,25 @@ class Runner(object):
         for source in self._sources:
             self._append_events(source())
 
-    def _process_parallel_event(self, parallel_event: ParallelEvent) -> None:
-        p = mp.Process(
-            target=lambda *args: self._parallel_events.put_nowait(parallel_event.function(*args)),
-            args=(parallel_event.trigger, ),
-            daemon=parallel_event.daemon,
-            name='{0}({1}) {2}'.format(
-                parallel_event.function.__name__,
-                parallel_event.trigger.__class__.__name__,
-                parallel_event.trigger
-            )
-        )
-        p.start()
-        self._parallel_processors.append((p, parallel_event.timeout, parallel_event.force_terminating))
+    def _handle_pool_exceptions(self, exc: BaseException, parallel_event: ParallelEvent):
+        self.stop()
+        logger.error('Execution failed during processing the event: {0}({1}) {2}'.format(
+            parallel_event.function.__name__, parallel_event.trigger.__class__.__name__, parallel_event.trigger,
+        ))
+        logger.error(exc)
 
     def _process_events(self, input_event: Event) -> None:
         for processor in self._processors[type(input_event)]:
             logger.debug('Processor: {0} event: {1}'.format(processor, input_event))
             try:
-                output_event = processor(input_event)
+                output_event: Union[Event, ParallelEvent] = processor(input_event)
                 if isinstance(output_event, ParallelEvent):
-                    self._process_parallel_event(output_event)
+                    self._pool.apply_async(
+                        run_parallel_processor,
+                        (output_event.encode(), ),
+                        callback=self._append_events,
+                        error_callback=lambda exc: self._handle_pool_exceptions(exc, output_event)
+                    )
                 else:
                     self._append_events(output_event)
             except Exception:
@@ -136,16 +142,6 @@ class Runner(object):
                     processor.__class__.__name__, input_event.__class__.__name__, input_event,
                 ))
                 logger.error(traceback.format_exc())
-
-        for p, t, force_terminate in self._parallel_processors:
-            p.join(timeout=t)
-            if p.is_alive() and force_terminate:
-                p.terminate()
-                logger.warning('Parallel processor was terminated by timeout: {0}'.format(p.name))
-
-        while self._parallel_events.empty() is False:
-            event = self._parallel_events.get_nowait()
-            self._append_events(event)
 
     def _tick(self) -> None:
         self._get_new_events()

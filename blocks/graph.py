@@ -5,6 +5,10 @@ from collections import defaultdict
 
 from blocks.types import Block, Event, Source, AnySource, Processor, AsyncSource, AsyncProcessor
 from blocks.logger import logger
+
+from blocks.types import Block, Event, Source, AnySource, Processor, AsyncSource, AsyncProcessor
+from blocks.types.base import AnyProcessors, TypeOfProcessor
+from blocks.types.graph import RenderingKernelType
 from blocks.types.base import AnyProcessors
 from blocks.validation import validate_annotations
 from blocks.annotations import get_input_events_type, get_output_events_type
@@ -25,6 +29,7 @@ class Graph(object):
         """
         self.sources: List[AnySource] = []
         self.processors: AnyProcessors = defaultdict(list)
+        self.count_of_parallel_tasks: int = 0
 
         self._output_events: Set[Type[Event]] = set()
 
@@ -39,6 +44,8 @@ class Graph(object):
         :param block:       Processor or Source to be included in graph.
         """
         validate_annotations(block)
+        if isinstance(block, Processor) and block.type_of_processor == TypeOfProcessor.PARALLEL:
+            self.count_of_parallel_tasks += 1
         if isinstance(block, (AsyncSource, Source)):
             self.sources.append(block)
         elif isinstance(block, (AsyncProcessor, Processor)):

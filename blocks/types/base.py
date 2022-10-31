@@ -4,10 +4,16 @@ Blocks - *Sources* and *Processors* - are a backbone of you app.
 Finally, all functions, decorated with :code:`@source` or :code:`@processor` are reborn to these classes.
 """
 
+from enum import Enum
 from abc import ABC, abstractmethod
-from typing import Any, Set, List, Type, Union, Iterable, Optional, DefaultDict
+from typing import Any, List, Type, Union, Iterable, Optional, DefaultDict
 
 Event = object
+
+
+class TypeOfProcessor(Enum):
+    SYNC = 0
+    PARALLEL = 1
 
 
 EventOrEvents = Union[Event, Iterable[Event]]
@@ -80,6 +86,18 @@ class Processor(ABC):
 
       >>> blocks = (Printer(state={}),)
     """
+
+    _type_of_processor: int = TypeOfProcessor.SYNC
+
+    @property
+    def type_of_processor(self) -> int:
+        return self._type_of_processor
+
+    @type_of_processor.setter
+    def type_of_processor(self, v: int) -> None:
+        if v not in (i.value for i in TypeOfProcessor):
+            raise ValueError("Incorrect type of processor")
+        self._type_of_processor = v
 
     @abstractmethod
     def __call__(self, event: Any) -> Optional[EventOrEvents]:
