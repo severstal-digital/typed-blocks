@@ -49,9 +49,6 @@ class KafkaSource(Source):
         :param ignore_errors:   If True, do not fail during casting messages to events. By design, messages in Kafka may
                                 be produced with totally different schemas, or without any.
         """
-        print(topics)
-        print(config)
-        print(cls)
         self.consumers: ConsumersMapping = _init_consumers(topics, config, cls)
         self._commit_messages: Dict[InputTopic, Message] = {}
         self._ignore_errors = ignore_errors

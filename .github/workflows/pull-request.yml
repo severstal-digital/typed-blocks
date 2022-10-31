@@ -19,12 +19,12 @@ jobs:
       run: python -m pip install pytest
     - name: run pytest (fast)
       run: pytest -s tests/
+    - name: Install testing dependencies (full)
+      run: python -m pip install -r tests/requirements/${{ matrix.python-version }}.txt
     - name: run mypy
       run: |
         python -m pip install mypy
-        python -m mypy --config setup.cfg . --exclude examples
-    - name: Install testing dependencies (full)
-      run: python -m pip install -r tests/requirements/${{ matrix.python-version }}.txt
+        python -m mypy --config setup.cfg . --exclude examples --exclude tests
     - name: run pytest (full)
       run: pytest -s tests/
 

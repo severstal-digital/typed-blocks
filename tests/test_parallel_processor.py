@@ -7,6 +7,11 @@ import pytest
 
 from blocks import App, Event, parallel_processor, Processor, source
 
+from blocks.types.dto import dill
+
+if dill is None:
+    pytest.skip("skipping dill-only tests", allow_module_level=True)
+
 
 @dataclass
 class InputEvent(Event):

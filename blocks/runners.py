@@ -4,9 +4,9 @@ import time
 import asyncio
 import functools
 import traceback
-import multiprocessing as mp
-from typing import List, Type, Deque, Tuple, Union, Optional, Awaitable, DefaultDict, cast
+from typing import List, Type, Deque, Union, Optional, Awaitable, DefaultDict, cast
 from collections import deque
+from multiprocessing.pool import Pool
 
 from blocks.graph import Graph
 from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, ParallelEvent, AsyncProcessor
@@ -41,7 +41,7 @@ class Runner(object):
         self._processors = cast(SyncProcessors, graph.processors)
         self._q: Deque[Event] = deque()
         self._alive = True
-        self._pool: mp.Pool = mp.Pool(graph.count_of_parallel_tasks) if graph.count_of_parallel_tasks > 0 else None
+        self._pool: Optional[Pool] = Pool(graph.count_of_parallel_tasks) if graph.count_of_parallel_tasks > 0 else None
         self._terminal_event = terminal_event
 
     def run(self, interval: float, once: bool) -> None:
@@ -112,7 +112,7 @@ class Runner(object):
         for source in self._sources:
             self._append_events(source())
 
-    def _handle_pool_exceptions(self, exc: BaseException, parallel_event: ParallelEvent):
+    def _handle_pool_exceptions(self, exc: BaseException, parallel_event: ParallelEvent) -> None:
         self.stop()
         logger.error('Execution failed during processing the event: {0}({1}) {2}'.format(
             parallel_event.function.__name__, parallel_event.trigger.__class__.__name__, parallel_event.trigger,
@@ -123,22 +123,27 @@ class Runner(object):
         for processor in self._processors[type(input_event)]:
             logger.debug('Processor: {0} event: {1}'.format(processor, input_event))
             try:
-                output_event: Union[Event, ParallelEvent] = processor(input_event)
-                if isinstance(output_event, ParallelEvent):
-                    self._pool.apply_async(
-                        run_parallel_processor,
-                        (output_event.encode(), ),
-                        callback=self._append_events,
-                        error_callback=lambda exc: self._handle_pool_exceptions(exc, output_event)
-                    )
-                else:
-                    self._append_events(output_event)
-            except Exception:
+                output_event = processor(input_event)
+            except:
                 self.stop()
                 logger.error('Execution failed during processing the event: {0}({1}) {2}'.format(
                     processor.__class__.__name__, input_event.__class__.__name__, input_event,
                 ))
                 logger.error(traceback.format_exc())
+            else:
+                if isinstance(output_event, ParallelEvent):
+                    parallel_event: ParallelEvent = output_event
+                    if self._pool is None:
+                        self.stop()
+                        raise ValueError('Tried to process parallel event while should not be!')
+                    self._pool.apply_async(
+                        run_parallel_processor,
+                        (parallel_event.encode(), ),
+                        callback=self._append_events,
+                        error_callback=lambda exc: self._handle_pool_exceptions(exc, parallel_event)
+                    )
+                else:
+                    self._append_events(output_event)
 
     def _tick(self) -> None:
         self._get_new_events()

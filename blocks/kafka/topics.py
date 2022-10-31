@@ -16,7 +16,7 @@ class ConsumerFactory(object):
 
     def __init__(
         self,
-        # Already set by KafkaSource by default, si will be used globally if not specified
+        # Already set by KafkaSource by default, so it will be used globally if not specified via topic
         cls: Optional[Type[AnyConsumer]] = None,
         config: Optional[ConsumerConfig] = None,
     ) -> None:
@@ -29,7 +29,7 @@ class ProducerFactory(object):
 
     def __init__(
         self,
-        # Already set by KafkaSource by default, si will be used globally if not specified
+        # Already set by KafkaSource by default, so it will be used globally if not specified via topic
         cls: Optional[Type[AnyProducer]] = None,
         config: Optional[ProducerConfig] = None,
     ) -> None:

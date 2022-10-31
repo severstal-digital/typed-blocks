@@ -87,17 +87,15 @@ class Processor(ABC):
       >>> blocks = (Printer(state={}),)
     """
 
-    _type_of_processor: int = TypeOfProcessor.SYNC
+    _type_of_processor: TypeOfProcessor = TypeOfProcessor.SYNC
 
     @property
-    def type_of_processor(self) -> int:
+    def type_of_processor(self) -> TypeOfProcessor:
         return self._type_of_processor
 
     @type_of_processor.setter
     def type_of_processor(self, v: int) -> None:
-        if v not in (i.value for i in TypeOfProcessor):
-            raise ValueError("Incorrect type of processor")
-        self._type_of_processor = v
+        self._type_of_processor = TypeOfProcessor(v)
 
     @abstractmethod
     def __call__(self, event: Any) -> Optional[EventOrEvents]:
