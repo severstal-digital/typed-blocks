@@ -1,5 +1,5 @@
-from blocks.db.sql.processors import SQLWriter, Connection
 from blocks.db.sql.sources import SQLReader
+from blocks.db.sql.processors import SQLWriter
 
 
 class SQLiteWriter(SQLWriter):

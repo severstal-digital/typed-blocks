@@ -11,6 +11,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ '3.7', '3.8', '3.9', '3.10', '3.11' ]
+    container: severstaldigital/python-librdkafka:${{ matrix.python-version }}-librdkafka-1.6.0-v0.5
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -18,15 +19,17 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-#    - name: Install dependencies
-#      run: |
-#        python -m pip install --upgrade pip
-#        pip install mypy
-#    - name: run mypy
-#      run: mypy .
-    - name: Install testing dependencies
-      run: python -m pip install pytest networkx matplotlib
-    - name: run pytest
+    - name: Install testing dependencies (pytest-only)
+      run: python -m pip install pytest
+    - name: run pytest (fast)
+      run: pytest -s tests/
+    - name: run mypy
+      run: |
+        python -m pip install pytest
+        python -m mypy --config setup.cfg . --exclude examples
+    - name: Install testing dependencies (full)
+      run: python -m pip install -r tests/requirements/${{ matrix.python-version }}.txt
+    - name: run pytest (full)
       run: pytest -s tests/
 
   version:

@@ -1,11 +1,11 @@
 # ToDo (tribunski.kir): change it to the protocol
-from sqlite3 import Connection
 from typing import List, Union, Callable
+from sqlite3 import Connection
 
 from blocks import Processor
+from blocks.logger import logger
 from blocks.db.types import Row, Table
 from blocks.db.next.sql import Query
-from blocks.logger import logger
 
 
 def _exec_queries(conn: Connection, query: Query, table: Table) -> None:
@@ -27,11 +27,11 @@ class SQLWriter(Processor):
 
     def __init__(self, queries: List[Query], connection_factory: Callable[[], Connection]) -> None:
         self._connection_factory = connection_factory
-        self._queries = {query.codec: query for query in queries}
+        self._queries = {query._codec: query for query in queries}
         self._closed = False
         self.__call__.__annotations__.update(
             {
-                'event': Union[tuple(query.codec for query in queries)],
+                'event': Union[tuple(query._codec for query in queries)],
             },
         )
 

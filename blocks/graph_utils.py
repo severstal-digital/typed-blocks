@@ -1,14 +1,13 @@
 import re
 import subprocess
-from collections import defaultdict
 from typing import List, Union
+from collections import defaultdict
 
 from blocks.logger import logger
 from blocks.types.graph import RenderingKernelType
 
 try:
-    from graphviz import ExecutableNotFound
-    from graphviz import Digraph
+    from graphviz import Digraph, ExecutableNotFound
 except ImportError:
     HAS_GRAPHVIZ = False
 else:

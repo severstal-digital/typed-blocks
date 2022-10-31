@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List
 from functools import partial
 
 import psycopg2
@@ -7,7 +7,7 @@ from wunderkafka import ConsumerConfig
 
 from blocks import App, processor
 from blocks.kafka import Batch, InputTopic, KafkaSource
-from blocks.postgres import Query, Table, PostgresWriter
+from blocks.postgres import Row, Query, Table, PostgresWriter
 
 
 class Mail(BaseModel):
@@ -35,11 +35,13 @@ def batch2table(event: MailBatch) -> MailBatchTable:
 
 if __name__ == '__main__':
     topics = [InputTopic('mails', Mail, from_beginning=True, max_empty_polls=100, batch_event=MailBatch)]
-    source = KafkaSource(topics=topics, config=ConsumerConfig(...))
+
+    kafka: Dict[str, Any] = dict()  # put your kafka configuration here or redefine ConsumerConfig with your defaults.
+    source = KafkaSource(topics=topics, config=ConsumerConfig(**kafka))
 
     inserts = [Query('insert into mytable ({}) values ({})', MailBatchTable)]
-    destionation = PostgresWriter(quieries=inserts, connection_factory=partial(psycopg2.connect, ...))
+    destination = PostgresWriter(queries=inserts, connection_factory=partial(psycopg2.connect, ...))
 
-    blocks = (source, batch_printer(), batch2table(), destionation)
+    blocks = (source, batch_printer(), batch2table(), destination)
 
     App(blocks).run(once=True)

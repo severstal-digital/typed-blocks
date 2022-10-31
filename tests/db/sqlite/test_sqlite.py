@@ -1,12 +1,8 @@
-import os.path
-import sqlite3
 from dataclasses import dataclass
 
-import pytest
-
+from blocks.sqlite import SQLiteReader, SQLiteWriter
 from blocks.db.types import Row
 from blocks.db.next.sql import Query, Dialects
-from blocks.sqlite import SQLiteWriter, SQLiteReader
 
 
 @dataclass
@@ -14,26 +10,6 @@ class TableRow(Row):
     id: int
     name: str
     text: str
-
-
-@pytest.fixture
-def connect():
-    def connection_factory():
-        con = sqlite3.connect('example.db')
-        with con:
-            con.execute('''CREATE TABLE IF NOT EXISTS test_table (id, name, text)''')
-        return con
-
-    return connection_factory
-
-
-# FixMe (tribunski.kir): potentially dangerous, use smth like mkstemp
-@pytest.fixture(autouse=True)
-def run_around_tests():
-    if os.path.exists('example.db'):
-        raise
-    yield
-    os.remove('example.db')
 
 
 def test_read_write(connect) -> None:

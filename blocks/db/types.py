@@ -71,6 +71,15 @@ class Table(Event):
     def values(self) -> List[Tuple]:
         return [row.values for row in self.rows]
 
+    @classmethod
+    def type(cls) -> Type[Row]:
+        # pydantic:
+        # row_codec = query.codec.__annotations__['rows'].__args__[0]
+        # dataclass:
+        # return cls.rows.__args__[0]
+        [tp] = cls.__annotations__['rows'].__args__
+        return tp
+
 
 @dataclass
 class Query(Event):

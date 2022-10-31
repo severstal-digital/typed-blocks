@@ -5,16 +5,9 @@ Finally, all functions, decorated with :code:`@source` or :code:`@processor` are
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Union, Iterable, Optional, DefaultDict, Type, List
+from typing import Any, Set, List, Type, Union, Iterable, Optional, DefaultDict
 
-
-class Event(object):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        err = '. '.join([
-            'You are going to use lightweight version of event',
-            'Define __init__-method, or use dataclasses or pydantic instead.',
-        ])
-        raise NotImplementedError(err)
+Event = object
 
 
 EventOrEvents = Union[Event, Iterable[Event]]
@@ -45,6 +38,10 @@ class Source(ABC):
 
       >>> blocks = (MySource(events=[MyEvent()]))
     """
+    def patch_annotations(self, out_types: Set[Type[Event]]) -> None:
+        # Just magic
+        # https://mypy.readthedocs.io/en/stable/common_issues.html#variables-vs-type-aliases
+        self.__call__.__annotations__['return'] = List[Union[tuple(out_types)]]                           # type: ignore
 
     @abstractmethod
     def __call__(self) -> EventOrEvents:
@@ -117,7 +114,7 @@ class AsyncSource(ABC):
         :return:        Single event or sequence of events.
         """
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """Define your graceful shutdown here."""
 
 
@@ -142,7 +139,7 @@ class AsyncProcessor(ABC):
                         when result processing is unnecessary.
         """
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """Define your graceful shutdown here."""
 
 

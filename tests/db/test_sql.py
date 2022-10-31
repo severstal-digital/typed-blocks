@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 import pytest
 
-from blocks.db.next.sql import Query, Dialects
 from blocks.db import Row
+from blocks.db.next.sql import Query, Dialects
 
 
 @dataclass

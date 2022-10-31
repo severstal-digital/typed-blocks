@@ -21,10 +21,7 @@ def _get_rows_or_table(conn: Connection, query: Query) -> Union[List[Row], Table
     if issubclass(query.codec, Row):
         row_codec = query.codec
     elif issubclass(query.codec, Table):
-        # pydantic:
-        # row_codec = query.codec.__annotations__['rows'].__args__[0]
-        # dataclass:
-        row_codec = query.codec.rows.__args__[0]
+        row_codec = query.codec.type()
     else:
         raise TypeError('Not valid codec type: {0}'.format(type(query.codec)))
     with conn.cursor() as cur:
@@ -73,8 +70,7 @@ class PostgresReader(Source):
     def __init__(self, queries: List[Query], conn: Callable[[], Connection]) -> None:
         self._conn_factory = conn
         self._queries = queries
-        out_annots = {query.codec for query in queries}
-        self.__call__.__annotations__['return'] = List[Union[tuple(out_annots)]]  # type: ignore
+        self.patch_annotations({query.codec for query in queries})
 
     def __call__(self) -> List[Event]:
         conn = self._conn_factory()
@@ -82,7 +78,8 @@ class PostgresReader(Source):
             with conn:
                 rows_or_tables = self._run_queries(conn)
         finally:
-            conn.close()
+            # Looks like an issue in types-psycopg2
+            conn.close()                                                                                  # type: ignore
         return rows_or_tables
 
     def _run_queries(self, conn: Any) -> List[Event]:

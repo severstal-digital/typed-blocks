@@ -2,7 +2,7 @@
 
 from typing import Any, Type, Callable, Optional, Awaitable
 
-from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor, ParallelEvent
+from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, ParallelEvent, AsyncProcessor
 
 # ToDo (tribunsky.kir): redo annotations to avoid "error: Untyped decorator makes function <...>" untyped
 # ToDo (tribunsky.kir): remove closures and explicit code duplication
@@ -55,7 +55,7 @@ def processor(function: ProcessorFunction) -> Type[Processor]:
 
     Example::
 
-      >>> from typing import Event
+      >>> from blocks import Event
 
       >>> from blocks import processor
 

@@ -3,7 +3,7 @@ from typing import Dict, List, Type, Union
 from redis import Redis
 
 from blocks import Event, Processor
-from blocks.utils import event2dict
+from blocks.redis.events import event2dict
 from blocks.redis.serdes import Serializer, serialize
 from blocks.redis.streams import OutputStream
 
@@ -50,7 +50,7 @@ class RedisProducer(Processor):
     def __call__(self, event: Event) -> None:
         stream = self._streams[type(event)]
         serialized = self._serializer(event2dict(event))
-        self._client.xadd(stream.name, fields=serialized, maxlen=stream.max_len)  # type: ignore
+        self._client.xadd(stream.name, fields=serialized, maxlen=stream.max_len)
 
     def close(self) -> None:
         """Graceful shutdown: close reids client."""

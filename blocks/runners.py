@@ -1,16 +1,16 @@
 """Runners are actually runtime for statically built graph."""
 
+import time
 import asyncio
 import functools
-import multiprocessing as mp
-import time
 import traceback
+import multiprocessing as mp
+from typing import List, Type, Deque, Tuple, Optional, Awaitable, DefaultDict, cast
 from collections import deque
-from typing import List, Type, Deque, Optional, Awaitable, DefaultDict, cast, Tuple
 
 from blocks.graph import Graph
+from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, ParallelEvent, AsyncProcessor
 from blocks.logger import logger
-from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, AsyncProcessor, ParallelEvent
 
 SyncProcessors = DefaultDict[Type[Event], List[Processor]]
 
@@ -123,6 +123,7 @@ class Runner(object):
 
     def _process_events(self, input_event: Event) -> None:
         for processor in self._processors[type(input_event)]:
+            logger.debug('Processor: {0} event: {1}'.format(processor, input_event))
             try:
                 output_event = processor(input_event)
                 if isinstance(output_event, ParallelEvent):

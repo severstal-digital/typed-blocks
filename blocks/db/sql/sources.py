@@ -1,26 +1,19 @@
 import inspect
+from typing import Any, List, Union, Callable
 from sqlite3 import Connection
 
-from typing import List, Union, Callable, Any
-
-from blocks import Source, Event
+from blocks import Event, Source
 from blocks.logger import logger
-from blocks.db.types import Row, Table
 from blocks.db.next.sql import Query
+from blocks.db.next.types import Table
 
 
-def _get_rows_or_table(conn: Connection, query: Query) -> Union[List[Row], Table]:
+def _get_rows_or_table(conn: Connection, query: Query) -> Union[List[Event], Table]:
     """Or how to make psycopg SLOW."""
     events = []
-    if issubclass(query.codec, Row):
-        row_codec = query.codec
-    elif issubclass(query.codec, Table):
-        # pydantic:
-        # row_codec = query.codec.__annotations__['rows'].__args__[0]
-        # dataclass:
-        row_codec = query.codec.rows.__args__[0]
-    else:
-        raise TypeError('Not valid codec type: {0}'.format(type(query.codec)))
+    row_codec = query.codec
+    if issubclass(query.codec, Table):
+        row_codec = query.codec.type()
     # ToDo (tribunsky.kir): sqlite raises `AttributeError: __enter__`
     # with conn.cursor() as cur:
     cur = conn.cursor()
@@ -39,11 +32,9 @@ def _get_rows_or_table(conn: Connection, query: Query) -> Union[List[Row], Table
         if fields_match is False:
             row_dict = {key: row_dict[key] for key in fields}
         events.append(row_codec(**row_dict))
-    if issubclass(query.codec, Row):
-        return events
-    elif issubclass(query.codec, Table):
+    if issubclass(query.codec, Table):
         return query.codec(rows=events)
-    raise TypeError('Not valid codec type: {0}'.format(type(query.codec)))
+    return events
 
 
 class SQLReader(Source):
@@ -51,8 +42,7 @@ class SQLReader(Source):
     def __init__(self, queries: List[Query], conn: Callable[[], Connection]) -> None:
         self._conn_factory = conn
         self._queries = queries
-        out_annots = {query.codec for query in queries}
-        self.__call__.__annotations__['return'] = List[Union[tuple(out_annots)]]  # type: ignore
+        self.patch_annotations({query.codec for query in queries})
 
     def __call__(self) -> List[Event]:
         conn = self._conn_factory()
