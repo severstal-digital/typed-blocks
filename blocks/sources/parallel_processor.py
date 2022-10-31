@@ -1,8 +1,4 @@
 from blocks.types import ParallelEvent
-try:
-    import dill
-except ImportError:
-    dill = None
 
 
 def run_parallel_processor(payload: bytes):

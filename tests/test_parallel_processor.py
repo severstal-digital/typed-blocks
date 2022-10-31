@@ -1,11 +1,11 @@
 import os
 import time
 from dataclasses import dataclass
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 import pytest
-from blocks import App, Event, parallel_processor, source, Processor
 
+from blocks import App, Event, parallel_processor, Processor, source
 
 
 @dataclass
@@ -54,7 +54,6 @@ class PostProcess(Processor):
         if len(self.out_events) >= 3:
             return TerminalEvent()
         self.out_events.append(e)
-
 
 
 
