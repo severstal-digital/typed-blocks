@@ -7,13 +7,20 @@ import traceback
 from typing import List, Type, Deque, Union, Optional, Awaitable, DefaultDict, cast
 from collections import deque
 from multiprocessing.pool import Pool
+from typing import Awaitable, cast, DefaultDict, Deque, List, Optional, Type, Union
 
 from blocks.graph import Graph
 from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, ParallelEvent, AsyncProcessor
 from blocks.logger import logger
 from blocks.sources.parallel_processor import run_parallel_processor
 
+from blocks.types import AsyncProcessor, AsyncSource, Event, EventOrEvents, ParallelEvent, Processor, Source
+
 SyncProcessors = DefaultDict[Type[Event], List[Processor]]
+
+
+def is_named_tuple(event: EventOrEvents) -> bool:
+    return isinstance(event, tuple) and hasattr(event, '_asdict') and hasattr(event, '_fields')
 
 
 class Runner(object):
@@ -70,15 +77,20 @@ class Runner(object):
         """Stop the execution."""
         self._alive = False
 
+    def _append_event(self, event: Event):
+        if not self._is_terminal_event(event):
+            self._q.appendleft(event)
+
     def _append_events(self, events: Optional[EventOrEvents]) -> None:
         if events is None:
             return None
+        elif is_named_tuple(events):
+            self._append_event(events)
         elif isinstance(events, (list, tuple)):
             for event in reversed(events):
-                if not self._is_terminal_event(event):
-                    self._q.appendleft(event)
-        elif not self._is_terminal_event(events):
-            self._q.appendleft(events)
+                self._append_event(event)
+        else:
+            self._append_event(events)
 
     def _is_terminal_event(self, event: Event) -> bool:
         if self._terminal_event is not None and isinstance(event, self._terminal_event):
@@ -190,15 +202,20 @@ class AsyncRunner(object):
         """Stop the execution."""
         self._alive = False
 
+    def _append_event(self, event: Event):
+        if not self._is_terminal_event(event):
+            self._q.append(event)
+
     def _append_events(self, events: Optional[EventOrEvents]) -> None:
         if events is None:
             return None
+        elif is_named_tuple(events):
+            self._append_event(events)
         elif isinstance(events, (list, tuple)):
             for event in events:
-                if not self._is_terminal_event(event):
-                    self._q.append(event)
-        elif not self._is_terminal_event(events):
-            self._q.append(events)
+                self._append_event(event)
+        else:
+            self._append_event(events)
 
     def _is_terminal_event(self, event: Event) -> bool:
         if self._terminal_event is not None and isinstance(event, self._terminal_event):
