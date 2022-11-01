@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import pytest
 
 from blocks import Graph, source, processor
-from blocks.graph_utils import HAS_NETWORKX, HAS_MATPLOTLIB
+from blocks.visualization import HAS_NETWORKX, HAS_MATPLOTLIB
 
 if not (HAS_NETWORKX and HAS_MATPLOTLIB):
     pytest.skip("skipping visualization-only tests", allow_module_level=True)

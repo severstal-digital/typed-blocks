@@ -4,17 +4,14 @@ import time
 import asyncio
 import functools
 import traceback
-from typing import List, Type, Deque, Union, Optional, Awaitable, DefaultDict, cast
+from typing import List, Type, Deque, Optional, Awaitable, DefaultDict, cast
 from collections import deque
 from multiprocessing.pool import Pool
-from typing import Awaitable, cast, DefaultDict, Deque, List, Optional, Type, Union
 
 from blocks.graph import Graph
 from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, ParallelEvent, AsyncProcessor
 from blocks.logger import logger
 from blocks.sources.parallel_processor import run_parallel_processor
-
-from blocks.types import AsyncProcessor, AsyncSource, Event, EventOrEvents, ParallelEvent, Processor, Source
 
 SyncProcessors = DefaultDict[Type[Event], List[Processor]]
 
@@ -77,7 +74,7 @@ class Runner(object):
         """Stop the execution."""
         self._alive = False
 
-    def _append_event(self, event: Event):
+    def _append_event(self, event: Event) -> None:
         if not self._is_terminal_event(event):
             self._q.appendleft(event)
 
@@ -202,7 +199,7 @@ class AsyncRunner(object):
         """Stop the execution."""
         self._alive = False
 
-    def _append_event(self, event: Event):
+    def _append_event(self, event: Event) -> None:
         if not self._is_terminal_event(event):
             self._q.append(event)
 

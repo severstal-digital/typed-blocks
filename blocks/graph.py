@@ -8,7 +8,7 @@ from blocks.logger import logger
 from blocks.types.base import AnyProcessors, TypeOfProcessor
 from blocks.validation import validate_annotations
 from blocks.annotations import get_input_events_type, get_output_events_type
-from blocks.graph_utils import build_graph
+from blocks.visualization import build_graph
 from blocks.types.graph import RenderingKernelType
 
 
