@@ -67,7 +67,7 @@ class MessageMock(Message):
         return self._topic
 
 
-class ConsumerMock(AnyConsumer):
+class ConsumerStub(AnyConsumer):
 
     def __init__(self, config: ConsumerConfig):
         super().__init__(config)
@@ -130,7 +130,7 @@ if HAS_PYDANTIC:
 @pytest.mark.parametrize('cls', test_types)
 def test_smoke_event_creation(cls) -> None:
     topics = [InputTopic(name='test', event=cls)]
-    source = KafkaSource(topics, ConsumerConfig(group_id='test'), cls=ConsumerMock, ignore_errors=False)
+    source = KafkaSource(topics, ConsumerConfig(group_id='test'), cls=ConsumerStub, ignore_errors=False)
 
     events = source()
     assert events
@@ -140,4 +140,4 @@ def test_smoke_event_creation(cls) -> None:
 def test_smoke_namedtuple_event_topic_override() -> None:
     topics = [InputTopic(name='test', event=SignalNT, consumer=ConsumerFactory(cls=AvroConsumer))]
     with pytest.raises(ValueError):
-        KafkaSource(topics, ConsumerConfig(group_id='test'), cls=ConsumerMock)
+        KafkaSource(topics, ConsumerConfig(group_id='test'), cls=ConsumerStub)

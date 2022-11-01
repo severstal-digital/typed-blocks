@@ -1,13 +1,9 @@
 from __future__ import annotations
 
 from typing import List, Type, Tuple
-from dataclasses import asdict, dataclass, is_dataclass
+from dataclasses import dataclass
 
 from blocks import Event
-from blocks.compat import HAS_PYDANTIC
-
-if HAS_PYDANTIC:
-    from pydantic import BaseModel
 
 
 # ToDo (tribunsky.kir): make Table generic which is parametrized via event for rows.
@@ -17,7 +13,7 @@ class Table(Event):
     Base class for database table description.
     Performs runtime type checks on every received row
     from query and drops invalid rows and then groups
-    rows into single table. Database source will returns
+    rows into single table. Database source will return
     all rows grouped in list as a single event in this case.
     Example::
 
@@ -47,15 +43,6 @@ class Table(Event):
             values = []
             fields = self.columns
             for row in self.rows:
-                # if is_dataclass(row):
-                #     dct = asdict(row)
-                #     tpl = tuple(dct[col] for col in fields)
-                #     values.append(tpl)
-                # elif isinstance(row, BaseModel):
-                #     dct = row.dict()
-                #     tpl = tuple(dct[col] for col in fields)
-                #     values.append(tpl)
-                # else:
                 tpl = tuple(getattr(row, col) for col in fields)
                 values.append(tpl)
             return values

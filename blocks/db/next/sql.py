@@ -52,7 +52,7 @@ class Query(object):
         self._where: Set[str] = set()
         self._codec: Optional[Type[Union[Event, Table]]] = codec
         self._fields: List[str] = []
-        self._placeholder = _PLACEHOLDERS[dialect]
+        self._placeholder: str = _PLACEHOLDERS[dialect]
 
     @property
     def codec(self) -> Type[Union[Event, Table]]:

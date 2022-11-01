@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from blocks.redis import InputStream, RedisConsumer
 
 
-class RedisMock(Redis):
+class RedisStub(Redis):
     def xread(
         self,
         streams: Dict[bytes, bytes],
@@ -68,7 +68,7 @@ test_types = [
 
 @pytest.fixture
 def client() -> Redis:
-    return RedisMock()
+    return RedisStub()
 
 
 @pytest.mark.parametrize('cls', test_types)
