@@ -4,7 +4,7 @@ import datetime
 from enum import Enum
 from typing import Type, Optional
 
-from wunderkafka import AnyConsumer, AnyProducer, AvroConsumer, ConsumerConfig, ProducerConfig, AvroModelProducer
+from wunderkafka import AnyConsumer, AnyProducer, ConsumerConfig, ProducerConfig
 
 from blocks.types import Event
 from blocks.logger import logger
@@ -14,15 +14,27 @@ from blocks.kafka.events import Batch
 class ConsumerFactory(object):
     """Class to allow some narrow customization of consumers via InputTopic."""
 
-    type: Type[AnyConsumer] = AvroConsumer
-    conf: Optional[ConsumerConfig] = None
+    def __init__(
+        self,
+        # Already set by KafkaSource by default, so it will be used globally if not specified via topic
+        cls: Optional[Type[AnyConsumer]] = None,
+        config: Optional[ConsumerConfig] = None,
+    ) -> None:
+        self.type = cls
+        self.conf = config
 
 
 class ProducerFactory(object):
     """Class to allow some narrow customization of producers via OutputTopic."""
 
-    type: Type[AnyProducer] = AvroModelProducer
-    conf: Optional[ProducerConfig] = None
+    def __init__(
+        self,
+        # Already set by KafkaSource by default, so it will be used globally if not specified via topic
+        cls: Optional[Type[AnyProducer]] = None,
+        config: Optional[ProducerConfig] = None,
+    ) -> None:
+        self.type = cls
+        self.conf = config
 
 
 DEFAULT_CONSUMER = ConsumerFactory()

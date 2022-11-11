@@ -31,7 +31,8 @@ class Scheduler(Source):
     def __init__(self, scheduled_event: Type[Event]) -> None:
         self._event = scheduled_event
         self._job = Job(1)
-        self.__call__.__annotations__['return'] = List[scheduled_event]  # type: ignore
+        # FixMe (tribunsky.kir): def fun2(x: tp) -> None: ...  # Error: "tp" is not valid as a type
+        self.patch_annotations({scheduled_event})
 
     def __call__(self, _: Any = None) -> EventOrEvents:
         if self._job.should_run:

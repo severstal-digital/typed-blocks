@@ -39,22 +39,22 @@ def p1(e: E1) -> E2:
 
 
 @processor
-def p2(e: E1):  # type: ignore
+def p2(e: E1):
     return E2(x=1)
 
 
 @processor
-def p3(e):  # type: ignore
+def p3(e):
     return E2(x=1)
 
 
 class P4(Processor):
-    def __call__(self, event: E1):  # type: ignore
+    def __call__(self, event: E1):
         return E2(x=1)
 
 
 class P5(Processor):
-    def __call__(self, e1: E1, e2: E2) -> E3:  # type: ignore
+    def __call__(self, e1: E1, e2: E2) -> E3:
         return E3(x=1)
 
 

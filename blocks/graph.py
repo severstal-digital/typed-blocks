@@ -1,16 +1,15 @@
 """Graph - is just static collection of blocks, which is waiting a moment to be executed."""
 
-from typing import Set, List, Type, Optional, Sequence, Union
+from typing import Set, List, Type, Union, Optional, Sequence
 from collections import defaultdict
 
-from blocks.graph_utils import build_graph
-from blocks.logger import logger
-
 from blocks.types import Block, Event, Source, AnySource, Processor, AsyncSource, AsyncProcessor
+from blocks.logger import logger
 from blocks.types.base import AnyProcessors, TypeOfProcessor
-from blocks.types.graph import RenderingKernelType
 from blocks.validation import validate_annotations
 from blocks.annotations import get_input_events_type, get_output_events_type
+from blocks.visualization import build_graph
+from blocks.types.graph import RenderingKernelType
 
 
 class Graph(object):

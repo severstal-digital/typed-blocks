@@ -1,5 +1,5 @@
 import time
-from typing import List, Union, Optional
+from typing import List, Optional
 from datetime import datetime, timedelta
 
 from redis import Redis
@@ -49,28 +49,37 @@ class RedisConsumer(Source):
         self._read_timeout = read_timeout
         self._deserializer = deserializer
 
-        out_annots = {stream.event for stream in streams}
-        self.__call__.__annotations__['return'] = List[Union[tuple(out_annots)]]  # type: ignore
+        self.patch_annotations({stream.event for stream in streams})
 
     # ToDo (tribunsky.kir): complexity? Author didn't even care about complexity.
     def __call__(self) -> List[Event]:
         events = []
         if self._last_call is None or (datetime.now() - self._last_call) > timedelta(milliseconds=self._read_timeout):
             try:
-                all_data = self._client.xread(self._offsets, self._count)  # type: ignore
-                self._last_call = datetime.now()
+                all_data = self._client.xread(self._offsets, self._count)
             except Exception as exc:
                 logger.error(exc)
             else:
+                self._last_call = datetime.now()
                 for stream_name, msgs in all_data:
                     for offset, message in msgs:
                         deserialized = self._deserializer(message)
                         codec = self._codecs[stream_name.decode()]
                         try:
-                            events.append(codec(**deserialized))
+                            event = codec(**deserialized)
+                        except TypeError as err:
+                            if 'takes no arguments' in str(err):
+                                event = codec()
+                                for k, v in deserialized.items():
+                                    if hasattr(event, k):
+                                        setattr(event, k, v)
+                                events.append(event)
+                            logger.warning(err)
                         except ValidationError as err:
                             logger.warning(err)
                             logger.warning('Deserialized message: {0}'.format(deserialized))
+                        else:
+                            events.append(event)
                         self._offsets[stream_name] = offset
         else:
             to_sleep = timedelta(milliseconds=self._read_timeout) - (datetime.now() - self._last_call)

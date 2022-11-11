@@ -1,7 +1,8 @@
-from dataclasses import dataclass
 from typing import Callable, Optional
+from dataclasses import dataclass
 
 from blocks.types.base import Event, EventOrEvents
+
 try:
     import dill
 except ImportError:

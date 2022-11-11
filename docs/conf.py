@@ -12,8 +12,8 @@
 #
 import os
 import sys
-
 from configparser import ConfigParser
+
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------

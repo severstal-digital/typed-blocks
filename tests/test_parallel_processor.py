@@ -7,6 +7,11 @@ import pytest
 
 from blocks import App, Event, parallel_processor, Processor, source
 
+from blocks.types.multiprocess import dill
+
+if dill is None:
+    pytest.skip("skipping dill-only tests", allow_module_level=True)
+
 
 @dataclass
 class InputEvent(Event):
@@ -35,10 +40,12 @@ def parallel_process_1(e: InputEvent) -> OutPutEvent:
     time.sleep(3)
     return OutPutEvent(value=e.value * 2, pid=os.getpid(), process=1)
 
+
 @parallel_processor
 def parallel_process_2(e: InputEvent) -> OutPutEvent:
     time.sleep(3)
     return OutPutEvent(value=e.value * 4, pid=os.getpid(), process=2)
+
 
 @parallel_processor
 def parallel_process_3(e: InputEvent) -> OutPutEvent:
@@ -56,11 +63,10 @@ class PostProcess(Processor):
         self.out_events.append(e)
 
 
-
 @pytest.mark.parametrize("blocks, count", (
-    ((generator(), parallel_process_1(), PostProcess()), 1),
-    ((generator(), parallel_process_1(), parallel_process_2(), PostProcess()), 2),
-    ((generator(), parallel_process_1(), parallel_process_2(), parallel_process_3(), PostProcess()), 3)
+        ((generator(), parallel_process_1(), PostProcess()), 1),
+        ((generator(), parallel_process_1(), parallel_process_2(), PostProcess()), 2),
+        ((generator(), parallel_process_1(), parallel_process_2(), parallel_process_3(), PostProcess()), 3)
 ))
 def test_count_of_parallel_processor(blocks: Tuple, count: int) -> None:
     assert App(blocks=blocks)._graph.count_of_parallel_tasks == count

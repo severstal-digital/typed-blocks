@@ -1,10 +1,10 @@
 """App with given blocks - is all that you need to start you application in most cases."""
 
-from typing import Optional, Sequence, Type
+from typing import Type, Optional, Sequence
 
 from blocks.graph import Graph
-from blocks.runners import AsyncRunner, Runner
 from blocks.types import Block, Event
+from blocks.runners import Runner, AsyncRunner
 from blocks.validation import validate_blocks
 
 

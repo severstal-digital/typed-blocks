@@ -54,9 +54,7 @@ class KafkaSource(Source):
         self._ignore_errors = ignore_errors
 
         self._prev_poll: Dict[InputTopic, List[Message]] = {}
-        out_annotations = {topic.event for topic in topics}
-        # No magic, very explicit, aha.
-        self.__call__.__annotations__['return'] = List[Union[tuple(out_annotations)]]  # type: ignore
+        self.patch_annotations({topic.event for topic in topics})
 
     def __call__(self) -> List[Event]:
         """
@@ -115,9 +113,11 @@ def shortened(src: Dict[str, Any], n: int = 8) -> Dict[str, Any]:
     for k, v in src.items():
         dct[k] = v
         if isinstance(v, (str, bytes)):
-            dots = '...' if isinstance(v, str) else b'...'
             if len(v) > target:
-                dct[k] = v[:target] + dots
+                if isinstance(v, str):
+                    dct[k] = v[:target] + '...'
+                else:
+                    dct[k] = v[:target] + b'...'
 
     return dct
 
@@ -136,12 +136,22 @@ def cast(msg: Message, codec: Type[Event], *, ignore_errors: bool, verbose_log_e
     else:
         dct = message_value
 
-    # ToDo (tribunsky.kir): definition of event via `= object` was a really 'nice' idea (no).
     try:
         return codec(**dct)
-    except (ValidationError, TypeError) as e:
+    except TypeError as exc:
+        if 'takes no arguments' in str(exc):
+            event = codec()
+            for k, v in dct.items():
+                if hasattr(event, k):
+                    setattr(event, k , v)
+            return event
         if verbose_log_errors:
-            logger.error(e)
+            logger.error(exc)
+        if ignore_errors is False:
+            raise
+    except (ValidationError, TypeError) as exc:
+        if verbose_log_errors:
+            logger.error(exc)
         else:
             logger.error('Failed to extract the message ({0})'.format(shortened(dct)))
         if ignore_errors is False:

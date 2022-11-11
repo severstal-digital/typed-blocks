@@ -1,10 +1,15 @@
 import os.path
-from dataclasses import dataclass
 from typing import Union
+from dataclasses import dataclass
 
 import pytest
 
-from blocks import source, processor, Graph
+from blocks import Graph, source, processor
+from blocks.visualization import HAS_NETWORKX, HAS_MATPLOTLIB
+
+if not (HAS_NETWORKX and HAS_MATPLOTLIB):
+    pytest.skip("skipping visualization-only tests", allow_module_level=True)
+
 from blocks.types.graph import RenderingKernelType
 
 
@@ -59,7 +64,7 @@ def test_event_in_graph_specific_annotation() -> None:
     blocks = (FastKafkaConsumerMessages(), ConsumerMeta(), MapperSize(), Predictor())
     graph = Graph(blocks)
     graph.save_visualization(rendering_type=RenderingKernelType.matplotlib)
-    assert os.path.exists('./GRAPH.png')
+    assert os.path.exists('GRAPH.png')
 
     with pytest.raises(RuntimeError):
         graph.save_visualization(rendering_type=RenderingKernelType.graphviz)
