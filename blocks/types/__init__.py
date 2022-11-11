@@ -1,4 +1,4 @@
-from blocks.types.dto import ParallelEvent
+from blocks.types.multiprocess import ParallelEvent
 from blocks.types.base import (
     Block,
     Event,

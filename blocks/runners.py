@@ -11,13 +11,14 @@ from multiprocessing.pool import Pool
 from blocks.graph import Graph
 from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, ParallelEvent, AsyncProcessor
 from blocks.logger import logger
-from blocks.sources.parallel_processor import run_parallel_processor
+from blocks.types.base import is_named_tuple
 
 SyncProcessors = DefaultDict[Type[Event], List[Processor]]
 
 
-def is_named_tuple(event: EventOrEvents) -> bool:
-    return isinstance(event, tuple) and hasattr(event, '_asdict') and hasattr(event, '_fields')
+def run_parallel_processor(payload: bytes) -> Optional[EventOrEvents]:
+    event = ParallelEvent.decode(payload)
+    return event.function(event.trigger)
 
 
 class Runner(object):
