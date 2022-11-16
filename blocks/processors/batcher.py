@@ -36,22 +36,22 @@ class Batcher(Processor):
         batch_event: Type[Event],
         batch_size: int,
     ) -> None:
-        self._int_deque: Deque[Event] = deque()
+        self._internal_deque: Deque[Event] = deque()
         self._batch_size = batch_size
         self._input_event = input_event
         self._batch_event = batch_event
  
 
     def __call__(self, event: Type[Event]) -> Optional[Event]:
-        self._int_deque.append(event)
-        if len(self._int_deque) == self._batch_size:
+        self._internal_deque.append(event)
+        if len(self._internal_deque) == self._batch_size:
             return self._get_batch()
         return None
 
     def _get_batch(self) -> Event:
-        items = list(self._int_deque)
-        self._int_deque.clear()
-        return self._batch_event(items)
+        items = list(self._internal_deque)
+        self._internal_deque.clear()
+        return self._batch_event(**items)
 
 
 class TimeoutedBatcher(Batcher):
@@ -101,7 +101,7 @@ class TimeoutedBatcher(Batcher):
                 return batch
         elif (
             isinstance(event, self._trigger_event)
-            and self._acc
+            and self._internal_deque
             and self._last_assembly_time is not None
             and _timeout_exceed(self._timeout, self._last_assembly_time)
         ):
