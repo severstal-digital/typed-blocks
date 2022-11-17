@@ -40,10 +40,13 @@ class Batcher(Processor):
         self._batch_size = batch_size
         self._input_event = input_event
         self._batch_event = batch_event
- 
+        self._batch_name = list(batch_event.__annotations__.keys())[0]
+        self.__call__.__annotations__.update({'event': self._input_event, 'return': self._batch_event})
+        logging.info('initialization...')
 
     def __call__(self, event: Event) -> Optional[Event]:
         self._internal_deque.append(event)
+        print('get event')
         logging.info('length deque {}'.format(len(self._internal_deque)))
         if len(self._internal_deque) == self._batch_size:
             return self._get_batch()
@@ -53,7 +56,7 @@ class Batcher(Processor):
         logging.info('OK, get batch')
         items = list(self._internal_deque)
         self._internal_deque.clear()
-        return self._batch_event(**items)
+        return self._batch_event(**{self._batch_name: items})
 
 
 class TimeoutedBatcher(Batcher):
@@ -92,6 +95,10 @@ class TimeoutedBatcher(Batcher):
         self._trigger_event = trigger_event
         self._last_assembly_time: Optional[float] = None
         super().__init__(input_event, batch_event, batch_size)
+        '''self.__call__.__annotations__.update({
+            'event': Union[self._input_event, self._trigger_event] if trigger_event else input_event,
+            'return': batch_event,
+        })'''
         logging.info('initialization...')
 
     def __call__(self, event: Event) -> Optional[Event]:
