@@ -42,7 +42,7 @@ class Batcher(Processor):
         self._batch_event = batch_event
  
 
-    def __call__(self, event: Type[Event]) -> Optional[Event]:
+    def __call__(self, event: Event) -> Optional[Event]:
         self._internal_deque.append(event)
         logging.info('length deque {}'.format(len(self._internal_deque)))
         if len(self._internal_deque) == self._batch_size:
@@ -92,8 +92,9 @@ class TimeoutedBatcher(Batcher):
         self._trigger_event = trigger_event
         self._last_assembly_time: Optional[float] = None
         super().__init__(input_event, batch_event, batch_size)
+        logging.info('initialization...')
 
-    def __call__(self, event: Type[Event]) -> Optional[Event]:
+    def __call__(self, event: Event) -> Optional[Event]:
         logging.info('get event')
         if isinstance(event, self._input_event):
             logging.info('its input event')
