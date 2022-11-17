@@ -1,7 +1,7 @@
 import time
 from typing import Type, Deque, Union, Optional, List, Any
 from collections import deque
-from loguru import logger
+import logging
 from blocks.types import Processor, Event, Source
 
 
@@ -44,13 +44,13 @@ class Batcher(Processor):
 
     def __call__(self, event: Type[Event]) -> Optional[Event]:
         self._internal_deque.append(event)
-        logger.info('length deque {}'.format(len(self._internal_deque)))
+        logging.info('length deque {}'.format(len(self._internal_deque)))
         if len(self._internal_deque) == self._batch_size:
             return self._get_batch()
         return None
 
     def _get_batch(self) -> Event:
-        logger.info('OK, get batch')
+        logging.info('OK, get batch')
         items = list(self._internal_deque)
         self._internal_deque.clear()
         return self._batch_event(**items)
@@ -94,9 +94,9 @@ class TimeoutedBatcher(Batcher):
         super().__init__(input_event, batch_event, batch_size)
 
     def __call__(self, event: Type[Event]) -> Optional[Event]:
-        logger.info('get event')
+        logging.info('get event')
         if isinstance(event, self._input_event):
-            logger.info('its input event')
+            logging.info('its input event')
             if self._last_assembly_time is None:
                 self._last_assembly_time = time.time()
             batch = super().__call__(event)
@@ -109,7 +109,7 @@ class TimeoutedBatcher(Batcher):
             and self._last_assembly_time is not None
             and _timeout_exceed(self._timeout, self._last_assembly_time)
         ):
-            logger.info('its trigger event')
+            logging.info('its trigger event')
             self._last_assembly_time = time.time()
             return self._get_batch()
         return None
