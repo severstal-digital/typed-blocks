@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 import random
-import numpy as np
+import array
 import time
 from blocks import App, Event, Processor, source
 from blocks.processors import TimeoutedBatcher, Batcher
@@ -11,13 +11,13 @@ from blocks.processors import TimeoutedBatcher, Batcher
 class InputEvent(Event):
     camera_no: int
     timestamp: str
-    image: np.array
+    image: array.array
 
 @dataclass
 class InputEventProcessed(Event):
     camera_no: int
     timestamp: str
-    image: np.array
+    image: array.array
 
 @dataclass
 class ImagesBatch(Event):
@@ -38,7 +38,7 @@ class TerminalEvent(Event):
 @source
 def generator() -> InputEvent:
     time.sleep(0.1)
-    return InputEvent(random.randint(1,9), "1668671381190", np.ones((2,4), dtype=np.int32))
+    return InputEvent(random.randint(1,9), "1668671381190", array.array('d', [2.4, 14.8, 7,6]))
 
 class PreProcessor(Processor):
     def __init__(self) -> None:
