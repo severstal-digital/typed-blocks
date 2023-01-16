@@ -20,7 +20,40 @@ def static_dependency(value: Any) -> Callable[[], Any]:
 
 
 class Container:
+    """
+      >>> import contextlib
+      >>> from dataclasses import dataclass
+      >>> from typing import Iterator
 
+      >>> from blocks.types.ioc import Dependency
+      >>> from blocks.ioc import Container, Depends, static_dependency
+
+      >>> def some_provider() -> None:
+      >>>    raise NotImplementedError
+
+      >>> def get_some() -> Dependency:
+      >>>    @contextlib.contextmanager
+      >>>    def manager() -> Iterator[int]:
+      >>>        yield 42
+      >>>    return manager
+
+      >>> @dataclass
+      >>> class Foo:
+      >>>     value: str
+
+      >>> c = Container(overrides={
+      >>>         some_provider: get_some(),
+      >>>         Foo: static_dependency(Foo(value="bar"))
+      >>>     }
+      >>> )
+
+      >>> @c.inject
+      >>> def show_info(some: int = Depends(some_provider), foo: Foo = Depends()) -> None:
+      >>>     print(some)
+      >>>     print(foo)
+
+      >>> show_info()
+    """
     __slots__ = ("_overrides",)
 
     def __init__(self, overrides: Dict[Callable, Dependency]):
