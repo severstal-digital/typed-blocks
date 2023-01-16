@@ -1,7 +1,7 @@
 import contextlib
 from functools import wraps
 from inspect import getfullargspec
-from typing import Any, Callable, Dict, get_type_hints, Type, Iterator
+from typing import Any, Callable, Dict, get_type_hints, Tuple, Type, Iterator, Optional
 
 from blocks.types.ioc import Dependency
 
@@ -59,7 +59,7 @@ class Container:
     def __init__(self, overrides: Dict[Callable, Dependency]):
         self._overrides = overrides
 
-    def _normalize_dependecy(self, type_: Type, depends: Depends):
+    def _normalize_dependecy(self, type_: Optional[Type], depends: Depends) -> Any:
         if depends.dependency is None:
             return type_
         return depends.dependency
@@ -67,7 +67,7 @@ class Container:
     def _get_dependencies(self, func: Callable) -> Dict[str, Callable]:
         hints = get_type_hints(func)
         argspec = getfullargspec(func)
-        defaults = argspec.defaults or []
+        defaults: Tuple[Depends, ...] = argspec.defaults or tuple()
         kwonlydefaults = argspec.kwonlydefaults or {}
         positional = {
             arg: self._normalize_dependecy(hints.get(arg), default)
@@ -88,7 +88,7 @@ class Container:
         required_dependencies = self._get_dependencies(handler)
 
         @wraps(handler)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Tuple, **kwargs: Dict) -> Any:
             stack = contextlib.ExitStack()
             dependencies = {}
             for name, dependency in required_dependencies.items():
