@@ -1,7 +1,8 @@
 import time
-from typing import Type, Deque, Union, Optional, List, Any
+from typing import Type, Deque, Union, Optional
 from collections import deque
-from blocks.types import Processor, Event, Source
+
+from blocks.types import Event, Processor
 
 
 def _timeout_exceed(timeout: float, ts: float) -> bool:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Type, Union
+from typing import Any, Type, Union
 from datetime import datetime
 
 from schedule import Job
