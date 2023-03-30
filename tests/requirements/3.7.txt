@@ -5,7 +5,7 @@ certifi==2022.9.24
 cffi==1.15.1
 charset-normalizer==2.1.1
 confluent-kafka==1.7.0
-cryptography==38.0.1
+cryptography==39.0.1
 cycler==0.11.0
 dacite==1.6.0
 dataclasses-avroschema==0.32.3
