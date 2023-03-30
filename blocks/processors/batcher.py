@@ -20,13 +20,17 @@ class Batcher(Processor):
     Example::
 
       >>> from typing import List
+
       >>> from blocks import Event
       >>> from blocks.processors import Batcher
+
       >>> class MyEvent(Event):
       ...     field1: int
       ...     field2: str
+
       >>> class BatchedEvents(Event):
       ...     events: List[MyEvent]
+
       >>> batcher = Batcher(MyEvent, BatchedEvents, 2)
     """
 
@@ -69,15 +73,20 @@ class TimeoutedBatcher(Batcher):
     Example::
 
       >>> from typing import List
-      >>> from blocks import Event 
+
+      >>> from blocks import Event
       >>> from blocks.processors import TimeoutedBatcher
+
       >>> class MyEvent(Event):
       ...     field1: int
       ...     field2: str
+
       >>> class TriggerEvent(Event):
       ...     field1: int
+
       >>> class BatchedEvents(Event):
       ...     events: List[MyEvent]
+
       >>> batcher = TimeoutedBatcher(MyEvent, TriggerEvent, BatchedEvents, 2, 1.5)
     """
 
