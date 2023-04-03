@@ -25,11 +25,25 @@ Decorators
    :members:
    :member-order: bysource
 
+Pre-defined sources
+-------------------
+
 Scheduler
----------
+^^^^^^^^^
 
 .. automodule:: blocks.sources.schedule
    :members:
+
+Pre-defined processors
+----------------------
+
+Batchers
+^^^^^^^^
+
+.. automodule:: blocks.processors.batcher
+   :members:
+
+
 
 Advanced API
 ============

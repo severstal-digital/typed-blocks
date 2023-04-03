@@ -92,9 +92,11 @@ class Query(object):
                     target.append(_clean_up(arg))
             else:
                 self._codec = arg
-                self._where = set(field.name for field in fields(arg))
+                # https://github.com/python/mypy/issues/14941
+                self._where = set(field.name for field in fields(arg))                          # type: ignore[arg-type]
                 if keyword == 'INSERT':
-                    attrs = [attr.name for attr in fields(arg)]
+                    # https://github.com/python/mypy/issues/14941
+                    attrs = [attr.name for attr in fields(arg)]                                 # type: ignore[arg-type]
                     flds = []
                     vals = []
                     for ix, attr in enumerate(attrs, 1):
@@ -118,12 +120,14 @@ class Query(object):
                 else:
                     if keyword == 'SET':
                         to_append = []
-                        for field in fields(arg):
+                        # https://github.com/python/mypy/issues/14941
+                        for field in fields(arg):                                               # type: ignore[arg-type]
                             to_append.append(field.name + (' = ' + self._placeholder))
                             self._fields.append(field.name)
                         target += to_append
                     else:
-                        target += [field.name for field in fields(arg)]
+                        # https://github.com/python/mypy/issues/14941
+                        target += [field.name for field in fields(arg)]                         # type: ignore[arg-type]
 
         return self
 
