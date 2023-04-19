@@ -18,16 +18,18 @@ Available extras
    * - extra
      - comment
    * - full
-     - all dependencies will be installed
+     - all possible dependencies will be installed
    * - schedule
-     - dependencies for blocks.sources.schedule.Scheduler
+     - dependencies for :code:`blocks.sources.schedule.Scheduler`
    * - kafka
-     - dependencies for blocks.kafka.KafkaApp
+     - dependencies for :code:`blocks.kafka.KafkaApp`
    * - redis
-     - dependencies for blocks.redis.RedisStreamsApp
+     - dependencies for :code:`blocks.redis.RedisStreamsApp`
    * - postgres
-     - dependencies for blocks.postgres.PostgresApp
-   * - graph_base
-     - dependencies for blocks.graph.Graph
-   * - graphvis
-     - dependencies for blocks.graph.Graph
+     - dependencies for :code:`blocks.postgres.PostgresApp`
+   * - visualization
+     - dependencies for :code:`blocks.graph.Graph`
+   * - graphviz
+     - dependencies for :code:`blocks.graph.Graph`
+   * - parallel
+     - dependencies for :code:`@parallel_processor` or for marking :code:`Processor` as separate process
