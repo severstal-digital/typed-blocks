@@ -101,7 +101,7 @@ def _build_graph_graphviz(blocks: List[Block], processors_dict: AnyProcessors) -
     if not HAS_GRAPHVIZ:
         logger.error('Install the graphviz package before using')
         raise RuntimeError('Install the graphviz package before using')
-    output = subprocess.run(['dot', '-V'], capture_output=True, shell=True)
+    output = subprocess.run(['dot', '-V'], capture_output=True, timeout=5)
     result = re.search(r'graphviz version \d+?.\d+?.\d+?', output.stderr.decode('utf-8'))
     if result is None:
         raise Exception("Can't render graph visualization, "

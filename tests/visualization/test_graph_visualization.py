@@ -60,11 +60,16 @@ def Predictor(e: Union[MappingWithSize, Meta]) -> OutputMapping:
     return OutputMapping(msg=KafkaMessage(x=1), height=200, width=100, meta='meta')
 
 
-def test_event_in_graph_specific_annotation() -> None:
+def test_matplotlib_visualization() -> None:
     blocks = (FastKafkaConsumerMessages(), ConsumerMeta(), MapperSize(), Predictor())
     graph = Graph(blocks)
     graph.save_visualization(rendering_type=RenderingKernelType.matplotlib)
     assert os.path.exists('GRAPH.png')
 
-    with pytest.raises(RuntimeError):
-        graph.save_visualization(rendering_type=RenderingKernelType.graphviz)
+
+def test_graphviz_visualization() -> None:
+    blocks = (FastKafkaConsumerMessages(), ConsumerMeta(), MapperSize(), Predictor())
+    graph = Graph(blocks)
+    graph.save_visualization(rendering_type=RenderingKernelType.graphviz)
+    assert os.path.exists('DAG.svg')
+
