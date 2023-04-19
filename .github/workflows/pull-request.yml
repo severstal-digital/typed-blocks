@@ -38,6 +38,8 @@ jobs:
       uses: actions/checkout@v3
     - name: Setup pytest
       run: python -m pip install pytest
+    - name: Install graphviz package
+      run: apt-get -y update && apt-get -y install graphviz
     - name: Install testing dependencies (full)
       run: python -m pip install -r tests/requirements/${{ matrix.python-version }}.txt
     - name: run mypy

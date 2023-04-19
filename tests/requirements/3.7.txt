@@ -17,6 +17,7 @@ Faker==15.1.1
 fastavro==1.7.0
 fonttools==4.38.0
 gssapi==1.8.2
+graphviz==0.20.1
 idna==3.4
 importlib-metadata==5.0.0
 inflect==6.0.2

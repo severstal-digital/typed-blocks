@@ -83,6 +83,7 @@ class Graph(object):
             raise ex
         except Exception as ex:
             logger.error(ex)
+            raise ex
 
     @property
     def contains_async_blocks(self) -> bool:
