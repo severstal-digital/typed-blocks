@@ -45,6 +45,7 @@ class App(object):
         :param once:            If True, executes the whole computational sequence only once, otherwise won't stop until
                                 specific conditions (such as terminal event) will occur.
         """
+
         Runner(self._graph, self._terminal_event).run(interval=min_interval, once=once)
 
     async def run_async(self, *, min_interval: float = 0.0, once: bool = False) -> None:
