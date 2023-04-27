@@ -167,13 +167,13 @@ class Runner(object):
                     round(timer.interval, 2)
                 )
             )
-            self._append_events(self._mp.get_events())
 
     def _tick(self) -> None:
         self._get_new_events()
         while self._q:
             event = self._q.popleft()
             self._process_events(event)
+            self._append_events(self._mp.get_events())
 
 
 class AsyncRunner(object):

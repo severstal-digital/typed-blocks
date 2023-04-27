@@ -1,3 +1,4 @@
+import os
 import time
 from collections import OrderedDict, defaultdict
 from typing import Optional, Type, List, Dict
@@ -42,14 +43,15 @@ class MetricProcess(object):
       >>> App(blocks).run()
     """
 
-    def __init__(self, time_collect: int = 60) -> None:
+    def __init__(self) -> None:
         """
         Init metric collector instance
-
-        :param time_collect: Time interval for metrics aggregation
         """
-        # todo: throw the time_collect outward
-        self._tc = time_collect
+        # Time interval for metrics aggregation
+        try:
+            self._tc = int(os.getenv('PROCESS_METRIC_INTERVAL', '60'))
+        except ValueError:
+            self._tc = 60
 
         self._collected_data: Dict[Processor, Dict[Event, List[EventTime]]] = OrderedDict()
         self._agg_metrics: List[AggregatedMetric] = []
@@ -60,16 +62,17 @@ class MetricProcess(object):
         if processor_type not in self._collected_data:
             self._collected_data[processor_type] = defaultdict(list)
         self._collected_data[processor_type][event_time.event].append(event_time)
-        self._check_duration()
 
     def get_events(self) -> List[AggregatedMetric]:
+        self._aggregate()
         data = self._agg_metrics.copy()
         self._agg_metrics = []
         return data
 
-    def _check_duration(self) -> None:
-        for processor, events in self._collected_data.copy().items():
-            for event, times in events.copy().items():
+    def _aggregate(self) -> None:
+        to_delete = []
+        for processor, events in self._collected_data.items():
+            for event, times in events.items():
                 interval = times[-1].end - times[0].start
                 if interval < self._tc:
                     continue
@@ -85,4 +88,6 @@ class MetricProcess(object):
                         avg_processing=round(sum(intervals) / len(intervals), 2),
                     )
                 )
-                del self._collected_data[processor][event]
+                to_delete.append((processor, event))
+        for pr, ev in to_delete:
+            del self._collected_data[pr][ev]
