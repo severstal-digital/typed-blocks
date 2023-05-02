@@ -8,7 +8,10 @@ class EventTime:
     event: Event
     start: float
     end: float
-    interval: float
+
+    @property
+    def interval(self) -> float:
+        return self.end - self.start
 
 
 @dataclass
@@ -22,7 +25,12 @@ class AggregatedMetric:
     avg_processing: float
 
     def __str__(self) -> str:
-        return f'[{self.processor} - {self.type_event}] ' \
-               f'Processed {self.count_events} events for {self.interval}. ' \
-               f'MIN: {self.min_processing}, MAX: {self.max_processing}, AVG: {self.avg_processing}'
-
+        return '[{0} - {1}] Processed {2} events for {3}. MIN: {4}, MAX: {5}, AVG: {6}'.format(
+            self.processor,
+            self.type_event,
+            self.count_events,
+            self.interval,
+            self.min_processing,
+            self.max_processing,
+            self.avg_processing
+        )

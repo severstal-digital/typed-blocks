@@ -26,13 +26,17 @@ class App(object):
         self,
         blocks: Sequence[Block],
         terminal_event: Optional[Type[Event]] = None,
+        *,
+        metric_time_interval: int = 60
     ) -> None:
         """
         Init application instance.
 
-        :param blocks:          Sources and processors to be included in application graph.
-        :param terminal_event:  Special event which simply stops execution, when processed.
+        :param blocks:                  Sources and processors to be included in application graph.
+        :param terminal_event:          Special event which simply stops execution, when processed.
+        :param metric_time_interval:    Time interval for metric aggregation.
         """
+        self._mti = metric_time_interval
         validate_blocks(blocks)
         self._graph = Graph(blocks)
         self._terminal_event = terminal_event
@@ -46,7 +50,7 @@ class App(object):
                                 specific conditions (such as terminal event) will occur.
         """
 
-        Runner(self._graph, self._terminal_event).run(interval=min_interval, once=once)
+        Runner(self._graph, self._terminal_event, metric_time_interval=self._mti).run(interval=min_interval, once=once)
 
     async def run_async(self, *, min_interval: float = 0.0, once: bool = False) -> None:
         """

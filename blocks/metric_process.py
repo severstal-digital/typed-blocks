@@ -1,6 +1,8 @@
-import os
+from __future__ import annotations
+
 import time
 from collections import OrderedDict, defaultdict
+from types import TracebackType
 from typing import Optional, Type, List, Dict
 
 from blocks.types.base import Processor, Event
@@ -8,18 +10,18 @@ from blocks.types.process_metrics import EventTime, AggregatedMetric
 
 
 class _ProcTimer:
-    def __enter__(self) -> "_ProcTimer":
+
+    def __enter__(self) -> _ProcTimer:
         self.start = time.perf_counter()
         return self
 
     def __exit__(
         self,
-        exc_type: Optional[Type],
-        exc_val: Optional[Exception],
-        exc_tb: Optional[Exception]
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType]
     ) -> None:
         self.end = time.perf_counter()
-        self.interval = self.end - self.start
 
 
 class MetricProcess(object):
@@ -43,33 +45,25 @@ class MetricProcess(object):
       >>> App(blocks).run()
     """
 
-    def __init__(self) -> None:
+    def __init__(self, metric_time_interval: int) -> None:
         """
         Init metric collector instance
+
+        :param metric_time_interval:    Time interval for metric aggregation.
         """
-        # Time interval for metrics aggregation
-        try:
-            self._tc = int(os.getenv('PROCESS_METRIC_INTERVAL', '60'))
-        except ValueError:
-            self._tc = 60
 
+        self._tc = metric_time_interval
         self._collected_data: Dict[Processor, Dict[Event, List[EventTime]]] = OrderedDict()
-        self._agg_metrics: List[AggregatedMetric] = []
 
-        self.timer = _ProcTimer
+        self.timer = _ProcTimer()
 
     def collect(self, processor_type: Processor, event_time: EventTime) -> None:
         if processor_type not in self._collected_data:
             self._collected_data[processor_type] = defaultdict(list)
         self._collected_data[processor_type][event_time.event].append(event_time)
 
-    def get_events(self) -> List[AggregatedMetric]:
-        self._aggregate()
-        data = self._agg_metrics.copy()
-        self._agg_metrics = []
-        return data
-
-    def _aggregate(self) -> None:
+    def get_aggregate_events(self) -> List[AggregatedMetric]:
+        agg_metrics: List[AggregatedMetric] = []
         to_delete = []
         for processor, events in self._collected_data.items():
             for event, times in events.items():
@@ -77,7 +71,7 @@ class MetricProcess(object):
                 if interval < self._tc:
                     continue
                 intervals = [t.interval for t in times]
-                self._agg_metrics.append(
+                agg_metrics.append(
                     AggregatedMetric(
                         processor=processor,
                         interval=round(interval, 2),
@@ -91,3 +85,5 @@ class MetricProcess(object):
                 to_delete.append((processor, event))
         for pr, ev in to_delete:
             del self._collected_data[pr][ev]
+
+        return agg_metrics

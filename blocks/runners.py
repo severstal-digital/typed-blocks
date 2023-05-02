@@ -33,12 +33,13 @@ class Runner(object):
     - proceeds actual shutdown of the app.
     """
 
-    def __init__(self, graph: Graph, terminal_event: Optional[Type[Event]]) -> None:
+    def __init__(self, graph: Graph, terminal_event: Optional[Type[Event]], *, metric_time_interval: int = 60) -> None:
         """
         Init runner instance.
 
-        :param graph:           Computational graph to execute.
-        :param terminal_event:  Special event which simply stops execution, when processed.
+        :param graph:                   Computational graph to execute.
+        :param terminal_event:          Special event which simply stops execution, when processed.
+        :param metric_time_interval:    Time interval for metric aggregation.
         """
         if graph.contains_async_blocks:
             raise RuntimeError('Blocks graph contains async blocks, must be run by AsyncRunner')
@@ -50,7 +51,7 @@ class Runner(object):
         self._pool: Optional[Pool] = Pool(graph.count_of_parallel_tasks) if graph.count_of_parallel_tasks > 0 else None
         self._terminal_event = terminal_event
 
-        self._mp = MetricProcess()
+        self._mp = MetricProcess(metric_time_interval=metric_time_interval)
 
     def run(self, interval: float, once: bool) -> None:
         """
@@ -134,46 +135,38 @@ class Runner(object):
 
     def _process_events(self, input_event: Event) -> None:
         for processor in self._processors[type(input_event)]:
-            with self._mp.timer() as timer:
-                logger.debug('Processor: {0} event: {1}'.format(processor, input_event))
-                try:
+            logger.debug('Processor: {0} event: {1}'.format(processor, input_event))
+            try:
+                with self._mp.timer as timer:
                     output_event = processor(input_event)
-                except:
-                    self.stop()
-                    logger.error('Execution failed during processing the event: {0}({1}) {2}'.format(
-                        processor.__class__.__name__, input_event.__class__.__name__, input_event,
-                    ))
-                    logger.error(traceback.format_exc())
+                self._mp.collect(processor, EventTime(type(input_event), timer.start, timer.end))
+            except:
+                self.stop()
+                logger.error('Execution failed during processing the event: {0}({1}) {2}'.format(
+                    processor.__class__.__name__, input_event.__class__.__name__, input_event,
+                ))
+                logger.error(traceback.format_exc())
+            else:
+                if isinstance(output_event, ParallelEvent):
+                    parallel_event: ParallelEvent = output_event
+                    if self._pool is None:
+                        self.stop()
+                        raise ValueError('Tried to process parallel event while should not be!')
+                    self._pool.apply_async(
+                        run_parallel_processor,
+                        (parallel_event.encode(),),
+                        callback=self._append_events,
+                        error_callback=lambda exc: self._handle_pool_exceptions(exc, parallel_event)
+                    )
                 else:
-                    if isinstance(output_event, ParallelEvent):
-                        parallel_event: ParallelEvent = output_event
-                        if self._pool is None:
-                            self.stop()
-                            raise ValueError('Tried to process parallel event while should not be!')
-                        self._pool.apply_async(
-                            run_parallel_processor,
-                            (parallel_event.encode(), ),
-                            callback=self._append_events,
-                            error_callback=lambda exc: self._handle_pool_exceptions(exc, parallel_event)
-                        )
-                    else:
-                        self._append_events(output_event)
-            self._mp.collect(
-                processor,
-                EventTime(
-                    type(input_event),
-                    timer.start,
-                    timer.end,
-                    round(timer.interval, 2)
-                )
-            )
+                    self._append_events(output_event)
 
     def _tick(self) -> None:
         self._get_new_events()
         while self._q:
             event = self._q.popleft()
             self._process_events(event)
-            self._append_events(self._mp.get_events())
+            self._append_events(self._mp.get_aggregate_events())
 
 
 class AsyncRunner(object):

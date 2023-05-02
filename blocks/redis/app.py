@@ -48,8 +48,10 @@ class RedisStreamsApp(App):
         terminal_event: Optional[Type[Event]] = None,
         serializer: Serializer = serialize,
         deserializer: Deserializer = deserialize,
+        *,
+        metric_time_interval: int = 60
     ) -> None:
-        super().__init__(blocks=[], terminal_event=terminal_event)
+        super().__init__(blocks=[], terminal_event=terminal_event, metric_time_interval=metric_time_interval)
         for block in blocks:
             self._graph.add_block(block)
 

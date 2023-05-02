@@ -47,8 +47,10 @@ class PostgresApp(App):
         blocks: Optional[Sequence[Processor]] = None,
         update_queries: Optional[List[Query]] = None,
         terminal_event: Optional[Type[Event]] = None,
+        *,
+        metric_time_interval: int = 60
     ) -> None:
-        super().__init__(blocks=[], terminal_event=terminal_event)
+        super().__init__(blocks=[], terminal_event=terminal_event, metric_time_interval=metric_time_interval)
         if read_queries:
             self._graph.add_block(PostgresReader(read_queries, connection_factory))
 
