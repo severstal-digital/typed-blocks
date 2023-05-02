@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from blocks import App, source, processor
-from blocks.types.process_metrics import AggregatedMetric
+from blocks.types.metrics import AggregatedMetric
 
 
 @dataclass
@@ -39,6 +39,8 @@ if __name__ == '__main__':
     blocks = (generator(), printer_e(), printer_e2(), printer_metric())
     App(
         blocks,
+        # If you want to collect statistics, you must set the flag True
+        collect_metric=True,
         # By default, the interval for aggregation of metrics is 60 seconds, but you can set it any way you want
         metric_time_interval=30
     ).run()

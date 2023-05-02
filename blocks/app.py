@@ -22,10 +22,12 @@ class App(object):
 
       >>> App(blocks).run()
     """
+
     def __init__(
         self,
         blocks: Sequence[Block],
         terminal_event: Optional[Type[Event]] = None,
+        collect_metric: bool = False,
         *,
         metric_time_interval: int = 60
     ) -> None:
@@ -34,9 +36,12 @@ class App(object):
 
         :param blocks:                  Sources and processors to be included in application graph.
         :param terminal_event:          Special event which simply stops execution, when processed.
+        :param collect_metric:          Flag responsible for collecting metrics. If the flag is True,
+                                        the metrics will be collected
         :param metric_time_interval:    Time interval for metric aggregation.
         """
         self._mti = metric_time_interval
+        self._collect_metric = collect_metric
         validate_blocks(blocks)
         self._graph = Graph(blocks)
         self._terminal_event = terminal_event
@@ -50,7 +55,9 @@ class App(object):
                                 specific conditions (such as terminal event) will occur.
         """
 
-        Runner(self._graph, self._terminal_event, metric_time_interval=self._mti).run(interval=min_interval, once=once)
+        Runner(
+            self._graph, self._terminal_event, collect_metric=self._collect_metric, metric_time_interval=self._mti,
+        ).run(interval=min_interval, once=once)
 
     async def run_async(self, *, min_interval: float = 0.0, once: bool = False) -> None:
         """

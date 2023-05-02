@@ -12,7 +12,7 @@ from blocks.graph import Graph
 from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, ParallelEvent, AsyncProcessor
 from blocks.logger import logger
 from blocks.types.base import is_named_tuple
-from blocks.metric_process import MetricProcess, EventTime
+from blocks.metric_collector import MetricCollector, EventTime
 
 SyncProcessors = DefaultDict[Type[Event], List[Processor]]
 
@@ -33,12 +33,21 @@ class Runner(object):
     - proceeds actual shutdown of the app.
     """
 
-    def __init__(self, graph: Graph, terminal_event: Optional[Type[Event]], *, metric_time_interval: int = 60) -> None:
+    def __init__(
+        self,
+        graph: Graph,
+        terminal_event: Optional[Type[Event]],
+        collect_metric: bool = False,
+        *,
+        metric_time_interval: int = 60,
+    ) -> None:
         """
         Init runner instance.
 
         :param graph:                   Computational graph to execute.
         :param terminal_event:          Special event which simply stops execution, when processed.
+        :param collect_metric:          Flag responsible for collecting metrics. If the flag is True,
+                                        the metrics will be collected
         :param metric_time_interval:    Time interval for metric aggregation.
         """
         if graph.contains_async_blocks:
@@ -51,7 +60,7 @@ class Runner(object):
         self._pool: Optional[Pool] = Pool(graph.count_of_parallel_tasks) if graph.count_of_parallel_tasks > 0 else None
         self._terminal_event = terminal_event
 
-        self._mp = MetricProcess(metric_time_interval=metric_time_interval)
+        self._mp = MetricCollector(metric_time_interval=metric_time_interval) if collect_metric else None
 
     def run(self, interval: float, once: bool) -> None:
         """
@@ -137,9 +146,12 @@ class Runner(object):
         for processor in self._processors[type(input_event)]:
             logger.debug('Processor: {0} event: {1}'.format(processor, input_event))
             try:
-                with self._mp.timer as timer:
+                if self._mp:
+                    with self._mp.timer as timer:
+                        output_event = processor(input_event)
+                    self._mp.collect(processor, EventTime(type(input_event), timer.start, timer.end))
+                else:
                     output_event = processor(input_event)
-                self._mp.collect(processor, EventTime(type(input_event), timer.start, timer.end))
             except:
                 self.stop()
                 logger.error('Execution failed during processing the event: {0}({1}) {2}'.format(
@@ -166,7 +178,8 @@ class Runner(object):
         while self._q:
             event = self._q.popleft()
             self._process_events(event)
-            self._append_events(self._mp.get_aggregate_events())
+            if self._mp:
+                self._append_events(self._mp.get_aggregate_events())
 
 
 class AsyncRunner(object):

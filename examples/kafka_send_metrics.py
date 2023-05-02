@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from blocks import processor
 from blocks.kafka import OutputTopic, InputTopic, KafkaApp
-from blocks.types.process_metrics import AggregatedMetric
+from blocks.types.metrics import AggregatedMetric
 
 from wunderkafka import ConsumerConfig, ProducerConfig
 
@@ -50,6 +50,8 @@ if __name__ == '__main__':
         blocks,
         consumer_config,
         producer_config,
+        # If you want to collect statistics, you must set the flag True
+        collect_metric=True,
         # By default, the interval for aggregation of metrics is 60 seconds, but you can set it any way you want
         metric_time_interval=30
     ).run()

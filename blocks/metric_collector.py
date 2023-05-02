@@ -6,7 +6,7 @@ from types import TracebackType
 from typing import Optional, Type, List, Dict
 
 from blocks.types.base import Processor, Event
-from blocks.types.process_metrics import EventTime, AggregatedMetric
+from blocks.types.metrics import EventTime, AggregatedMetric
 
 
 class _ProcTimer:
@@ -24,7 +24,7 @@ class _ProcTimer:
         self.end = time.perf_counter()
 
 
-class MetricProcess(object):
+class MetricCollector(object):
     """
     Collecting information about processor operation
 
@@ -35,14 +35,14 @@ class MetricProcess(object):
     Example::
 
       >>> from blocks import App, source, processor
-      >>> from blocks.types.process_metrics import AggregatedMetric
+      >>> from blocks.types.metrics import AggregatedMetric
 
       >>> @processor
       >>> def printer(e: AggregatedMetric) -> None:
       ...       print(e)
 
       >>> blocks  = (..., printer())
-      >>> App(blocks).run()
+      >>> App(blocks, collect_metric=True).run()
     """
 
     def __init__(self, metric_time_interval: int) -> None:
