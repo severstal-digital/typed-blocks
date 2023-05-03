@@ -53,19 +53,32 @@ class KafkaApp(App):
         consumer_config: Optional[ConsumerConfig] = None,
         producer_config: Optional[ProducerConfig] = None,
         terminal_event: Optional[Type[Event]] = None,
+        collect_metric: bool = False,
+        *,
+        metric_time_interval: int = 60
     ) -> None:
         """
         Initiate Kafka app instance.
 
-        :param topics:              Input/OutputTopic to work with.
-        :param blocks:              Additional blocks with business logic, other events sources or just processors
-                                    to make effects.
-        :param consumer_config:     Default consumer config to be applied, if not defined per InputTopic.
-        :param producer_config:     Default producer config to be applied, if not defined per OutputTopic.
-        :param terminal_event:      If specified, special event to notify app to stop receiving events and close all
-                                    blocks properly.
+        :param topics:                  Input/OutputTopic to work with.
+        :param blocks:                  Additional blocks with business logic, other events sources or just processors
+                                        to make effects.
+        :param consumer_config:         Default consumer config to be applied, if not defined per InputTopic.
+        :param producer_config:         Default producer config to be applied, if not defined per OutputTopic.
+        :param terminal_event:          If specified, special event to notify app to stop receiving events and close all
+                                        blocks properly.
+
+        :param collect_metric:          Flag responsible for collecting metrics. If the flag is True,
+                                        the metrics will be collected
+        :param metric_time_interval:    Time interval for metric aggregation.
+
         """
-        super().__init__(blocks=[], terminal_event=terminal_event)
+        super().__init__(
+            blocks=[],
+            terminal_event=terminal_event,
+            metric_time_interval=metric_time_interval,
+            collect_metric=collect_metric
+        )
         for block in blocks:
             self._graph.add_block(block)
 
