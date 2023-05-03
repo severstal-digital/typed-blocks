@@ -59,8 +59,13 @@ class Runner(object):
         self._alive = True
         self._pool: Optional[Pool] = Pool(graph.count_of_parallel_tasks) if graph.count_of_parallel_tasks > 0 else None
         self._terminal_event = terminal_event
+        self._collect_metric = collect_metric
 
-        self._mp = MetricCollector(metric_time_interval=metric_time_interval) if collect_metric else None
+        if self._collect_metric:
+            self._run_processor = self._metric_run_proc
+            self._mp = MetricCollector(metric_time_interval=metric_time_interval)
+        else:
+            self._run_processor = self._run_proc
 
     def run(self, interval: float, once: bool) -> None:
         """
@@ -142,16 +147,20 @@ class Runner(object):
         ))
         logger.error(exc)
 
+    def _metric_run_proc(self, processor: Processor, input_event: Event) -> EventOrEvents:
+        with self._mp.timer as timer:
+            output_event = processor(input_event)
+        self._mp.collect(processor, EventTime(type(input_event), timer.start, timer.end))
+        return output_event
+
+    def _run_proc(self, processor: Processor, input_event: Event) -> EventOrEvents:
+        return processor(input_event)
+
     def _process_events(self, input_event: Event) -> None:
         for processor in self._processors[type(input_event)]:
             logger.debug('Processor: {0} event: {1}'.format(processor, input_event))
             try:
-                if self._mp:
-                    with self._mp.timer as timer:
-                        output_event = processor(input_event)
-                    self._mp.collect(processor, EventTime(type(input_event), timer.start, timer.end))
-                else:
-                    output_event = processor(input_event)
+                output_event = self._run_processor(processor, input_event)
             except:
                 self.stop()
                 logger.error('Execution failed during processing the event: {0}({1}) {2}'.format(
@@ -178,7 +187,7 @@ class Runner(object):
         while self._q:
             event = self._q.popleft()
             self._process_events(event)
-            if self._mp:
+            if self._collect_metric:
                 self._append_events(self._mp.get_aggregate_events())
 
 
