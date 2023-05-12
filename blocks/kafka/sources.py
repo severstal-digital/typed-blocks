@@ -54,7 +54,12 @@ class KafkaSource(Source):
         self._ignore_errors = ignore_errors
 
         self._prev_poll: Dict[InputTopic, List[Message]] = {}
-        self.patch_annotations({topic.event for topic in topics})
+        self.patch_annotations(
+            {
+                topic.batch_event if (topic.batched or topic.max_empty_polls) and topic.batch_event else topic.event
+                for topic in topics
+            }
+        )
 
     def __call__(self) -> List[Event]:
         """

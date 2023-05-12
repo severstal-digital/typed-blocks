@@ -1,13 +1,14 @@
 import sys
 import random
+from time import time
 
+from blocks.annotations import get_output_events_type
 from blocks.compat import HAS_PYDANTIC
 
-if sys.version_info >= (3,8):
+if sys.version_info >= (3, 8):
     from typing import Protocol
 else:
     from typing_extensions import Protocol
-
 
 from typing import Any, Dict, List, Optional, NamedTuple
 from dataclasses import dataclass
@@ -109,6 +110,10 @@ class SignalDC:
     value: float
 
 
+class BatchSignal(NamedTuple):
+    events: List[SignalNT]
+
+
 test_types = [
     SignalNT,
     SignalO,
@@ -116,13 +121,14 @@ test_types = [
     SignalDC,
 ]
 
-
 if HAS_PYDANTIC:
     from pydantic import BaseModel
+
 
     class SignalP(BaseModel):
         id: int
         value: float
+
 
     test_types.append(SignalP)
 
@@ -141,3 +147,14 @@ def test_smoke_namedtuple_event_topic_override() -> None:
     topics = [InputTopic(name='test', event=SignalNT, consumer=ConsumerFactory(cls=AvroConsumer))]
     with pytest.raises(ValueError):
         KafkaSource(topics, ConsumerConfig(group_id='test'), cls=ConsumerStub)
+
+@pytest.mark.parametrize("event,batch_event,till", [
+    (SignalNT, BatchSignal, int(time() * 1000)),
+    (SignalNT, BatchSignal, None),
+])
+def test_batch_annotations(event, batch_event, till) -> None:
+    topics = [InputTopic(name='test', event=event, batch_event=batch_event, read_till=till)]
+    source = KafkaSource(topics, ConsumerConfig(group_id='test'), cls=ConsumerStub, ignore_errors=False)
+    events = get_output_events_type(source)
+    assert len(events) == 1
+    assert events[0] is BatchSignal
