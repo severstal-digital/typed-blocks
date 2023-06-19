@@ -7,33 +7,36 @@ from blocks.db.types import Query, Row, Table
 from pyhive.hive import Connection
 
 
-def prepare_query_value(value: Union[int, float, str]) -> str:
-    new_value = str(value)
-    if isinstance(value, str):
-        new_value = "'{0}'".format(new_value)
-    return new_value
-
-
-def _exec_queries(conn: Connection, query_text: str, rows: Table) -> None:
+def _exec_queries(conn: Connection, query_text: str, partition_key: Union[str, None], rows: Table) -> None:
     total_count = len(rows.values)
     with conn.cursor() as cursor:
         for ix, row in enumerate(rows.rows, 1):
-            columns = row.columns
-            values = [prepare_query_value(value) for value in row.values]
+            row_dict = row.as_dict
+            query = query_text
             query_args: List[str] = []
 
             if 'partition' in query_text.lower():
-                query_args.append(columns[0])
-                columns = columns[1:]
-                query_args.append(values[0])
-                values = values[1:]
+                if partition_key is None:
+                    raise KeyError("Please specify partition key for Query object if using PARTITION in query!")
 
-            query_args.append(', '.join(columns))
-            query_args.append(', '.join(values))
-            query = query_text.format(*query_args)
+                partition_value = row_dict.get(partition_key)
+                if not partition_value:
+                    raise KeyError("Missed partition key column '{0}' in row table. Row columns: {1}".format(
+                            partition_key, list(row_dict.keys())))
 
-            logger.info('[{0}/{1}] Executing query: {2}'.format(ix, total_count, query))
-            cursor.execute(query)
+                query = query.format('{0}=%s'.format(partition_key), '{0}', '{1}')
+                query_args.append(partition_value)
+                del row_dict[partition_key]
+
+            columns = row_dict.keys()
+            query = query.format(
+                ', '.join([col for col in columns]),
+                ', '.join(['%s' for i in range(len(columns))])
+            )
+            query_args += row_dict.values()
+
+            logger.info('[{0}/{1}] Executing query: {2} {3}'.format(ix, total_count, query, query_args))
+            cursor.execute(query, query_args)
             logger.info('[{0}/{1}] Query execution finished'.format(ix, total_count))
 
 
@@ -43,10 +46,9 @@ class HiveWriter(Processor):
         based on data received from event. On initialization must get list
         of queries in order to perform arbitrary mapping.
         Query arguments which will be pasted from instance of Table:
-        - {0} partition key, takes from first column
-        - {1} partition value, takes from firs value
-        - {2} table columns
-        - {3} table values
+        - {0} partition key and value, takes from table row, need to pass partition key as argument to Query
+        - {1} table columns
+        - {2} table values
         Example::
 
           >>> from dataclasses import dataclass
@@ -56,9 +58,11 @@ class HiveWriter(Processor):
 
           >>> @dataclass
           ... class TableRow(Row):
+          ...     partition_col: str
           ...     x: int
 
-          >>> queries = [Query('INSERT INTO table PARTITION ({0}={1}) ({2}) values ({3})', TableRow)]
+          >>> partition_key = 'partition_col'
+          >>> queries = [Query('INSERT INTO table PARTITION ({0}) ({1}) values ({2})', TableRow, partition_key)]
           >>> blocks = (HiveWriter(queries), ...)
         """
     def __init__(self, queries: List[Query], connection_factory: Callable[[], Connection]) -> None:
@@ -83,4 +87,4 @@ class HiveWriter(Processor):
             table = event
         else:
             raise ValueError('Wrong event type {0}'.format(event))
-        _exec_queries(conn, query.text, table)
+        _exec_queries(conn, query.text, query.partition_key, table)
