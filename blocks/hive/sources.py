@@ -21,8 +21,10 @@ def _get_rows_or_table(conn: Connection, query: Query, table_name: str) -> Union
         logger.info('Validating')
 
         # Each column in description returns Tuple where first value is column name.
+        keys = [col[0] for col in cur.description]
         # Column name contains table name - remove it for validation
-        keys = [col[0].replace(f'{table_name}.', '') for col in cur.description]
+        if keys[0].startswith('{0}.'.format(table_name)):
+            keys = ['.'.join(col.split('.')[1:]) for col in keys]
         fields = inspect.signature(row_codec).parameters
         fields_match = set(keys) == set(fields)
         if fields_match is False:
