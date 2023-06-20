@@ -4,6 +4,7 @@ build:
   image: latest
   apt_packages:
     - libkrb5-dev
+    - libsasl2-dev
 
 python:
   version: "3.8"

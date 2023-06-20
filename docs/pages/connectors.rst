@@ -108,3 +108,22 @@ Processors
    :members:
    :special-members:
    :exclude-members: __weakref__
+
+Hive
+--------
+
+Sources
+^^^^^^^
+
+.. automodule:: blocks.hive.sources
+   :members:
+   :special-members:
+   :exclude-members: __weakref__
+
+Processors
+^^^^^^^^^^
+
+.. automodule:: blocks.hive.processors
+   :members:
+   :special-members:
+   :exclude-members: __weakref__
