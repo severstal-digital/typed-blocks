@@ -71,3 +71,5 @@ def printer2(e: E2) -> None:
 blocks = (generator(), printer(), printer2())
 App(blocks).run(once=True)
 ```
+
+
