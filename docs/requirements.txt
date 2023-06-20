@@ -26,7 +26,6 @@ psycopg2-binary==2.9.2               # 2021-11-12
 pycparser==2.21                      # 2021-11-06
 pydantic==1.8.2                      # 2021-05-11
 Pygments==2.11.2                     # 2022-01-06
-PyHive==0.6.5                        # 2023-06-19
 pyparsing==3.0.7                     # 2022-01-21
 pyspnego==0.5.0                      # 2022-02-21
 python-dateutil==2.8.2               # 2021-07-14
@@ -34,7 +33,6 @@ pytz==2021.3                         # 2021-10-02
 redis==4.0.2                         # 2021-11-22
 requests==2.27.1                     # 2022-01-05
 requests-kerberos==0.13.0            # 2021-11-03
-sasl==0.3.1                          # 2023-06-19
 schedule==1.1.0                      # 2021-04-10
 six==1.16.0                          # 2021-05-05
 snowballstemmer==2.2.0               # 2021-11-16
@@ -47,8 +45,6 @@ sphinxcontrib-jsmath==1.0.1          # 2019-01-21
 sphinxcontrib-qthelp==1.0.3          # 2020-02-29
 sphinxcontrib-serializinghtml==1.1.5 # 2021-05-22
 stringcase==1.2.0                    # 2017-08-06
-thrift==0.16.0                       # 2023-06-19
-thrift-sasl==0.4.3                   # 2023-06-19
 typing_extensions==4.1.1             # 2022-02-14
 urllib3==1.26.8                      # 2022-01-07
 wrapt==1.13.3                        # 2021-10-29

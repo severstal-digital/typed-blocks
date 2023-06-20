@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Type, Tuple, Union
+from typing import List, Type, Tuple, Union
 from dataclasses import asdict, dataclass
 
 from blocks import Event
@@ -34,10 +34,6 @@ class Row(Event):
     @property
     def values(self) -> Tuple:
         return tuple(asdict(self).values())
-
-    @property
-    def as_dict(self) -> Dict:
-        return asdict(self)
 
 
 @dataclass
@@ -109,4 +105,3 @@ class Query(Event):
     """
     text: str
     codec: Type[Union[Row, Table]]
-    partition_key: Union[str, None] = None

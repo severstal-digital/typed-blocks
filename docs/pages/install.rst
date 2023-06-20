@@ -27,8 +27,6 @@ Available extras
      - dependencies for :code:`blocks.redis.RedisStreamsApp`
    * - postgres
      - dependencies for :code:`blocks.postgres.PostgresApp`
-   * - hive
-     - dependencies for :code:`blocks.hive.HiveReader` and :code:`blocks.hive.HiveWriter`
    * - visualization
      - dependencies for :code:`blocks.graph.Graph`
    * - graphviz
