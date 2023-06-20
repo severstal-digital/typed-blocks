@@ -1,4 +1,4 @@
-from typing import List, Union, Callable
+from typing import List, Union, Callable, Any
 
 from blocks import Processor
 from blocks.logger import logger
@@ -13,9 +13,9 @@ def _exec_queries(conn: Connection, query_text: str, partition_key: Union[str, N
         for ix, row in enumerate(rows.rows, 1):
             row_dict = row.as_dict
             query = query_text
-            query_args: List[str] = []
+            query_args: List[Any] = []
 
-            if 'partition' in query_text.lower():
+            if ' partition ' in query_text.lower():
                 if partition_key is None:
                     raise KeyError("Please specify partition key for Query object if using PARTITION in query!")
 
@@ -62,7 +62,7 @@ class HiveWriter(Processor):
           ...     x: int
 
           >>> partition_key = 'partition_col'
-          >>> queries = [Query('INSERT INTO table PARTITION ({0}) ({1}) values ({2})', TableRow, partition_key)]
+          >>> queries = [Query('INSERT INTO table PARTITION ({0}) ({1}) VALUES ({2})', TableRow, partition_key)]
           >>> blocks = (HiveWriter(queries), ...)
         """
     def __init__(self, queries: List[Query], connection_factory: Callable[[], Connection]) -> None:
