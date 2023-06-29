@@ -43,11 +43,12 @@ class Scheduler(Source):
         else:
             if not self._job.last_run:
                 return self.__emit_single_event()
-            else:
-                if datetime.now() - self._job.last_run > self._job.period:
-                    missed_runs = (datetime.now() - self._job.last_run) // self._job.period
-                    self._job.last_run = datetime.now()
-                    return [self._event() for _ in range(missed_runs)]
+            if self._job.last_run is None or self._job.period is None:
+                raise RuntimeError("Couldn't determine {0} settings, please set-up {0}".format(self.__class__.__name__))
+            if datetime.now() - self._job.last_run > self._job.period:
+                missed_runs = (datetime.now() - self._job.last_run) // self._job.period
+                self._job.last_run = datetime.now()
+                return [self._event() for _ in range(missed_runs)]
         return []
 
     def every(self, interval: int = 1) -> Scheduler:
