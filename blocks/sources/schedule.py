@@ -28,20 +28,29 @@ class Scheduler(Source):
       >>> blocks = (Scheduler(MyEvent).every().minute.at(':30'), ...)
     """
 
-    def __init__(self, scheduled_event: Type[Event]) -> None:
+    def __init__(self, scheduled_event: Type[Event], *, skip_when_busy: bool = True) -> None:
         self._event = scheduled_event
         self._job = Job(1)
         # FixMe (tribunsky.kir): def fun2(x: tp) -> None: ...  # Error: "tp" is not valid as a type
         self.patch_annotations({scheduled_event})
 
+        self._skip_when_busy = skip_when_busy
+
     def __call__(self, _: Any = None) -> EventOrEvents:
-        if self._job.should_run:
-            self._job.last_run = datetime.now()
-            self._job._schedule_next_run()
-            return [self._event()]
+        if self._skip_when_busy:
+            if self._job.should_run:
+                return self.__emit_single_event()
+        else:
+            if not self._job.last_run:
+                return self.__emit_single_event()
+            else:
+                if datetime.now() - self._job.last_run > self._job.period:
+                    missed_runs = (datetime.now() - self._job.last_run) // self._job.period
+                    self._job.last_run = datetime.now()
+                    return [self._event() for _ in range(missed_runs)]
         return []
 
-    def every(self, interval: Union[int, float] = 1) -> Scheduler:
+    def every(self, interval: int = 1) -> Scheduler:
         self._job.interval = interval
         return self
 
@@ -78,3 +87,8 @@ class Scheduler(Source):
         self._job.unit = unit
         self._job._schedule_next_run()
         return self
+
+    def __emit_single_event(self) -> EventOrEvents:
+        self._job.last_run = datetime.now()
+        self._job._schedule_next_run()
+        return [self._event()]
