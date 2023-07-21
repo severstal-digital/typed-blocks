@@ -16,11 +16,13 @@ from blocks.db.types import Table
 class Dialects(str, Enum):
     postgres: str = 'postgres'
     sqlite: str = 'sqlite'
+    mssql: str = 'mssql'
 
 
 _PLACEHOLDERS: 'MappingProxyType[str, str]' = MappingProxyType({
     Dialects.postgres: '%s',
     Dialects.sqlite: '?',
+    Dialects.mssql: '%s'
 })
 
 # Ordering matters =/
