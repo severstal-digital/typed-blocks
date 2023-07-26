@@ -109,6 +109,34 @@ Processors
    :special-members:
    :exclude-members: __weakref__
 
+Mssql
+--------
+
+App
+^^^
+
+.. autoclass:: blocks.mssql.app.MssqlApp
+   :members:
+   :inherited-members:
+   :special-members:
+   :exclude-members: __weakref__, run_async
+
+Sources
+^^^^^^^
+
+.. automodule:: blocks.mssql.sources
+   :members:
+   :special-members:
+   :exclude-members: __weakref__
+
+Processors
+^^^^^^^^^^
+
+.. automodule:: blocks.mssql.processors
+   :members:
+   :special-members:
+   :exclude-members: __weakref__
+
 Hive
 --------
 
