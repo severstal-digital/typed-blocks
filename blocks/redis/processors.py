@@ -13,7 +13,7 @@ class RedisProducer(Processor):
     Class represents event processor that writes messages to Redis streams
     based on data received from event. On initialization must get list
     of output streams in order to perform arbitrary mapping. In most cases
-    you don't need to use RedisProducer directly, RedisApp can make this for you.
+    you don't need to use RedisProducer directly, RedisStreamsApp can make this for you.
 
     Example::
 

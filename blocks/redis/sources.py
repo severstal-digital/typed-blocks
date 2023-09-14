@@ -16,7 +16,7 @@ class RedisConsumer(Source):
     Class represents event source that reads messages from Redis streams
     and wraps them into given events. On initialization must get list
     of input streams in order to perform arbitrary mapping. In most cases
-    you don't need to use RedisConsumer directly, RedisApp can make this for you.
+    you don't need to use RedisConsumer directly, RedisStreamsApp can make this for you.
 
     Example::
 
@@ -42,7 +42,7 @@ class RedisConsumer(Source):
         deserializer: Deserializer = deserialize,
     ) -> None:
         self._client = client
-        self._codecs = {stream.name: stream.event for stream in streams}
+        self._codecs = {stream.name: (stream.event, stream.filter_function) for stream in streams}
         self._offsets = {stream.name.encode(): stream.start_id.encode() for stream in streams}
         self._count = min(stream.messages_limit for stream in streams)
         self._last_call: Optional[datetime] = None
@@ -63,8 +63,9 @@ class RedisConsumer(Source):
                 self._last_call = datetime.now()
                 for stream_name, msgs in all_data:
                     for offset, message in msgs:
+                        filter_message = self._codecs[stream_name.decode()][1]
                         deserialized = self._deserializer(message)
-                        codec = self._codecs[stream_name.decode()]
+                        codec = self._codecs[stream_name.decode()][0]
                         try:
                             event = codec(**deserialized)
                         except TypeError as err:
@@ -73,13 +74,15 @@ class RedisConsumer(Source):
                                 for k, v in deserialized.items():
                                     if hasattr(event, k):
                                         setattr(event, k, v)
-                                events.append(event)
+                                if filter_message(event):
+                                    events.append(event)
                             logger.warning(err)
                         except ValidationError as err:
                             logger.warning(err)
                             logger.warning('Deserialized message: {0}'.format(deserialized))
                         else:
-                            events.append(event)
+                            if filter_message(event):
+                                events.append(event)
                         self._offsets[stream_name] = offset
         else:
             to_sleep = timedelta(milliseconds=self._read_timeout) - (datetime.now() - self._last_call)

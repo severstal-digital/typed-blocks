@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Union, Optional, NamedTuple
+from typing import Dict, List, Tuple, Union, Optional, NamedTuple, Any
 from dataclasses import dataclass
 
 import pytest
@@ -20,7 +20,10 @@ class RedisStub(Redis):
         count: Optional[int] = None,
         block: Optional[int] = None,
     ) -> List[List[Union[bytes, List[Tuple[bytes, Dict[bytes, bytes]]]]]]:
-        return [[b'test', [(b'1667229601456-0', {b'id': b'181489903', b'value': b'0.0023', b'flag': b'false'})]]]
+        return [[b'test', [(b'1667229601456-0', {b'id': b'181489903', b'value': b'0.0023', b'flag': b'false'})]],
+                [b'test', [(b'1667229601457-0', {b'id': b'181489904', b'value': b'0.0040', b'flag': b'true'})]],
+                [b'test', [(b'1667229601458-0', {b'id': b'181489905', b'value': b'0.0045', b'flag': b'true'})]]]
+
 
 
 class SignalNT(NamedTuple):
@@ -77,9 +80,21 @@ def test_smoke_event_creation(cls, client) -> None:
     source = RedisConsumer(client, streams, read_timeout=100)
 
     events = source()
+    print(source)
     assert events
-    for event in events:
-        assert isinstance(event, cls)
-        assert event.id == 181489903
-        assert event.value == approx(0.0023)
-        assert event.flag is False
+    for i in range(1):
+        assert isinstance(events[i], cls)
+        assert events[i].id == 181489903
+        assert events[i].value == approx(0.0023)
+        assert events[i].flag is False
+
+def filter_1(value: BaseModel) -> bool:
+    return value.value > 0.0023
+
+
+def test_smoke_event_creation_filter(client) -> None:
+    streams = [InputStream(name='test', event=SignalP, filter_function=filter_1)]
+    source = RedisConsumer(client, streams, read_timeout=100)
+    events = source()
+    assert len(events) == 2
+    assert events[0].id == 181489904
