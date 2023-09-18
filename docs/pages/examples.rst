@@ -18,12 +18,12 @@ Parallel execution
 
 
 Send metric of the process
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude::  ../../examples/custom_send_metrics.py
 
 
 Send metric of the process using Kafka
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude::  ../../examples/custom_send_metrics.py

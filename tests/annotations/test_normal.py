@@ -37,6 +37,16 @@ class ClassProc1(Processor):
         return [E2(x=event.x)]
 
 
+class ClassStringProc0(Processor):
+    def __call__(self, event: E1) -> "List[Union[E1, E2, E3]]":
+        return [E2(x=event.x)]
+
+
+class ClassStringProc1(Processor):
+    def __call__(self, event: "Union[E1, E2, E3]") -> 'List[E2]':
+        return [E2(x=event.x)]
+
+
 @processor
 def proc1(event: E1) -> List[E2]:
     return [E2(x=event.x)]
@@ -68,7 +78,9 @@ def generator() -> E2:
         (proc3, get_input_events_type),
         (proc0, get_output_events_type),
         (ClassProc1, get_input_events_type),
-        (ClassProc0, get_output_events_type)
+        (ClassProc0, get_output_events_type),
+        (ClassStringProc1, get_input_events_type),
+        (ClassStringProc0, get_output_events_type)
     ]
 )
 def test_annotation(func_processor, func_res) -> None:
