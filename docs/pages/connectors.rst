@@ -110,7 +110,7 @@ Processors
    :exclude-members: __weakref__
 
 Mssql
---------
+-----
 
 App
 ^^^
@@ -138,7 +138,7 @@ Processors
    :exclude-members: __weakref__
 
 Hive
---------
+----
 
 Sources
 ^^^^^^^

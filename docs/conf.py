@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'Typed Blocks'
-copyright = '2021-2022, Severstal Digital'
+copyright = '2021-2023, Severstal Digital'
 author = 'Daniil Zubakin'
 
 cfg = ConfigParser()
