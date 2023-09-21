@@ -6,7 +6,7 @@ from blocks.annotations import get_output_events_type
 from blocks.compat import HAS_PYDANTIC
 
 if sys.version_info >= (3, 8):
-    from typing import Protocol
+    from typing import Protocol, Union
 else:
     from typing_extensions import Protocol
 
@@ -85,6 +85,9 @@ class ConsumerStub(AnyConsumer):
         for _ in range(10):
             msg = {'id': random.randint(-max_value, max_value), 'value': random.uniform(-max_value, max_value)}
             messages.append(MessageMock(topic='test', value=msg))
+        messages.append(MessageMock(topic='test_filter', value={'id': 1, 'value': 10000}))
+        messages.append(MessageMock(topic='test_filter', value={'id': 2, 'value': 10001}))
+        messages.append(MessageMock(topic='test_filter', value={'id': 3, 'value': 10002}))
         return messages
 
 
@@ -141,6 +144,19 @@ def test_smoke_event_creation(cls) -> None:
     events = source()
     assert events
     assert all(isinstance(event, cls) for event in events)
+
+
+def filter_func(value: Union[SignalNT, SignalO, SignalOI, SignalDC]) -> bool:
+    return value.value >= 10000
+
+@pytest.mark.parametrize('cls', (SignalNT, SignalOI, SignalDC))
+def test_smoke_event_creation_filter(cls) -> None:
+    topics = [InputTopic(name='test', event=cls, filter_function=filter_func)]
+    source = KafkaSource(topics, ConsumerConfig(group_id='test'), cls=ConsumerStub, ignore_errors=False)
+
+    events = source()
+    assert events
+    assert len(events) == 3
 
 
 def test_smoke_namedtuple_event_topic_override() -> None:

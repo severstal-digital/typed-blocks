@@ -172,12 +172,13 @@ def _make_events(
     events: List[Event] = []
     for msg in messages:
         event = cast(msg, topic.event, ignore_errors=ignore_errors, verbose_log_errors=topic.verbose_log_errors)
-        if event is not None:
-            if topic.commit_manually:
-                # Do not know in advance which event should be committed.
-                # So stashing necessary meta to every event from topics which may be committed manually.
-                _stash_msg_meta(event, msg)
-            events.append(event)
+        if topic.filter_function(event):
+            if event is not None:
+                if topic.commit_manually:
+                    # Do not know in advance which event should be committed.
+                    # So stashing necessary meta to every event from topics which may be committed manually.
+                    _stash_msg_meta(event, msg)
+                events.append(event)
 
     if topic.batched:
         if topic.batch_event is None:

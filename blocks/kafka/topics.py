@@ -2,7 +2,7 @@
 
 import datetime
 from enum import Enum
-from typing import Type, Optional
+from typing import Type, Optional, Callable, Dict
 
 from wunderkafka import AnyConsumer, AnyProducer, ConsumerConfig, ProducerConfig
 
@@ -136,6 +136,7 @@ class InputTopic(_Topic):
         name: str,
         event: Type[Event],
         *,
+        filter_function: Callable[[Event], bool] = lambda x: True,
         group_id: Optional[str] = None,
         key: Optional[Type[Event]] = None,
         commit_offset: str = 'never',
@@ -160,6 +161,7 @@ class InputTopic(_Topic):
 
         :param name:            Kafka topic name to be consumed.
         :param event:           Event-inherited model for message values to be unpacked to.
+        :param filter_function: The function of filtering messages from the topic.
         :param group_id:        Override consumer's group id from config.
         :param key:             Event-inherited model for messages keys to be unpacked to, if any.
         :param commit_offset:   One of possible strategies of how to commit offsets for a given event.
@@ -207,6 +209,7 @@ class InputTopic(_Topic):
         self.poll_timeout = poll_timeout
         self.messages_limit = messages_limit
         self.consumer = consumer
+        self.filter_function = filter_function
 
     # Shortening code in Consumers, but still exhibiting strings in API.
     @property
