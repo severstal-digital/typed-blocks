@@ -6,7 +6,7 @@ from types import TracebackType
 from typing import Optional, Type, List, Dict
 
 from blocks.types.base import Processor, Event
-from blocks.types.metrics import EventTime, AggregatedMetric
+from blocks.types.metrics import MetricEvent, AggregatedMetric
 
 
 class _ProcTimer:
@@ -49,15 +49,22 @@ class MetricCollector(object):
         """
         Init metric collector instance
 
+        The size attributes are essentially just the amount of memory occupied
+        by the processor already after __call__ is called.
+
+        In order to get a more complete picture,
+        not just the post-processing event size,
+        requires an implementation in the processor itself with periodic memory usage information collection.
+
         :param metric_time_interval:    Time interval for metric aggregation.
         """
 
         self._tc = metric_time_interval
-        self._collected_data: Dict[Processor, Dict[Event, List[EventTime]]] = OrderedDict()
+        self._collected_data: Dict[Processor, Dict[Event, List[MetricEvent]]] = OrderedDict()
 
         self.timer = _ProcTimer()
 
-    def collect(self, processor_type: Processor, event_time: EventTime) -> None:
+    def collect(self, processor_type: Processor, event_time: MetricEvent) -> None:
         if processor_type not in self._collected_data:
             self._collected_data[processor_type] = defaultdict(list)
         self._collected_data[processor_type][event_time.event].append(event_time)
@@ -66,20 +73,24 @@ class MetricCollector(object):
         agg_metrics: List[AggregatedMetric] = []
         to_delete = []
         for processor, events in self._collected_data.items():
-            for event, times in events.items():
-                interval = times[-1].end - times[0].start
+            for event, metrics in events.items():
+                interval = metrics[-1].end - metrics[0].start
                 if interval < self._tc:
                     continue
-                intervals = [t.interval for t in times]
+                sizes = [m.size_object for m in metrics]
+                intervals = [m.interval for m in metrics]
                 agg_metrics.append(
                     AggregatedMetric(
                         processor=processor,
                         interval=round(interval, 2),
                         type_event=event,
-                        count_events=len(times),
+                        count_events=len(metrics),
                         max_processing=max(intervals),
                         min_processing=min(intervals),
                         avg_processing=round(sum(intervals) / len(intervals), 2),
+                        min_size=min(sizes),
+                        max_size=max(sizes),
+                        avg_size=round(sum(sizes) / len(sizes), 3)
                     )
                 )
                 to_delete.append((processor, event))

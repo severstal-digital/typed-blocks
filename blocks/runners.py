@@ -12,9 +12,16 @@ from blocks.graph import Graph
 from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, ParallelEvent, AsyncProcessor
 from blocks.logger import logger
 from blocks.types.base import is_named_tuple
-from blocks.metric_collector import MetricCollector, EventTime
+from blocks.metric_collector import MetricCollector, MetricEvent
 
 SyncProcessors = DefaultDict[Type[Event], List[Processor]]
+
+try:
+    import objsize
+
+    METRIC_SIZE: bool = True
+except ImportError:
+    METRIC_SIZE = False
 
 
 def run_parallel_processor(payload: bytes) -> Optional[EventOrEvents]:
@@ -64,6 +71,10 @@ class Runner(object):
         if self._collect_metric:
             self._run_processor = self._metric_run_proc
             self._mp = MetricCollector(metric_time_interval=metric_time_interval)
+            if not METRIC_SIZE:
+                logger.warning(
+                    "For information about the size of the object, install the `typed-blocks[size-metric]` extra"
+                )
         else:
             self._run_processor = self._run_proc
 
@@ -150,7 +161,15 @@ class Runner(object):
     def _metric_run_proc(self, processor: Processor, input_event: Event) -> EventOrEvents:
         with self._mp.timer as timer:
             output_event = processor(input_event)
-        self._mp.collect(processor, EventTime(type(input_event), timer.start, timer.end))
+        self._mp.collect(
+            processor,
+            MetricEvent(
+                type(input_event),
+                timer.start,
+                timer.end,
+                size_object=round(objsize.get_deep_size(processor) / (1<<20), 3) if METRIC_SIZE else 0
+            )
+        )
         return output_event
 
     def _run_proc(self, processor: Processor, input_event: Event) -> EventOrEvents:

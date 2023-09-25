@@ -37,3 +37,5 @@ Available extras
      - dependencies for :code:`blocks.graph.Graph`
    * - parallel
      - dependencies for :code:`@parallel_processor` or for marking :code:`Processor` as separate process
+   * - size-metric
+     - dependencies for :code:`blocks.runners.Runner` to collect object size metrics
