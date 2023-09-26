@@ -4,7 +4,7 @@ import time
 import asyncio
 import functools
 import traceback
-from typing import List, Type, Deque, Optional, Awaitable, DefaultDict, cast
+from typing import List, Type, Deque, Optional, Awaitable, DefaultDict, cast, Union
 from collections import deque
 from multiprocessing.pool import Pool
 
@@ -20,6 +20,18 @@ SyncProcessors = DefaultDict[Type[Event], List[Processor]]
 def run_parallel_processor(payload: bytes) -> Optional[EventOrEvents]:
     event = ParallelEvent.decode(payload)
     return event.function(event.trigger)
+
+def get_processor_for_event(event: Event, processors: DefaultDict[type[object], list[Union[AsyncProcessor, Processor]]]) -> \
+        List[Union[AsyncProcessor, Processor]]:
+    type_event = type(event)
+    if type_event in processors:
+        return processors[type_event]
+    else:
+        for inheritance in type_event.__mro__:
+            if inheritance in processors:
+                processors[type_event] = processors[inheritance]
+                break
+        return processors[inheritance]
 
 
 class Runner(object):
@@ -157,7 +169,7 @@ class Runner(object):
         return processor(input_event)
 
     def _process_events(self, input_event: Event) -> None:
-        for processor in self._processors[type(input_event)]:
+        for processor in get_processor_for_event(input_event, self._processors):
             logger.debug('Processor: {0} event: {1}'.format(processor, input_event))
             try:
                 output_event = self._run_processor(processor, input_event)
@@ -290,7 +302,7 @@ class AsyncRunner(object):
         tasks = []
         while self._q:
             event = self._q.popleft()
-            for processor in self._processors[type(event)]:
+            for processor in get_processor_for_event(event, self._processors):
                 if isinstance(processor, AsyncProcessor):
                     task: Awaitable[EventOrEvents] = loop.create_task(processor(event))
                 else:
