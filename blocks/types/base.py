@@ -8,9 +8,9 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Set, List, Type, Union, Iterable, Optional, DefaultDict
 
+
 Event = object
 EventOrEvents = Union[Event, Iterable[Event]]
-
 
 def is_named_tuple(event: EventOrEvents) -> bool:
     return isinstance(event, tuple) and hasattr(event, '_asdict') and hasattr(event, '_fields')
