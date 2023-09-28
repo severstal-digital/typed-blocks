@@ -1,6 +1,6 @@
 from typing import List, Type, Callable, Optional, Sequence
 
-from blocks import App, Event, Runner, Processor
+from blocks import App, Event, Runner, Processor, Block
 from blocks.db import Query
 from blocks.validation import validate_blocks
 from blocks.mssql.sources import MssqlReader
@@ -44,7 +44,7 @@ class MssqlApp(App):
         # ToDo (tribunsky.kir): leaky abstraction, check on more examples of libraries which implement PEP 249
         connection_factory: Callable[[], Connection],
         read_queries: Optional[List[Query]] = None,
-        blocks: Optional[Sequence[Processor]] = None,
+        blocks: Optional[Sequence[Block]] = None,
         update_queries: Optional[List[Query]] = None,
         terminal_event: Optional[Type[Event]] = None,
         collect_metric: bool = False,
