@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union, Callable
+from typing import List, Union, Callable
 
 from psycopg2 import sql
 
@@ -11,10 +11,9 @@ from blocks.postgres.protocols import Connection
 # ToDo (tribunsky.kir): not sure if it is good idea to give the user execute any queries
 def _exec_queries(conn: Connection, query_text: str, rows: Table) -> None:
     columns = rows.columns
-    # Looks like issues in types-psycopg2
-    query = sql.SQL(query_text).format(                                                                   # type: ignore
-        sql.SQL(', ').join([sql.Identifier(col) for col in columns]),                                     # type: ignore
-        sql.SQL(', ').join(sql.Placeholder() * len(columns)),                                             # type: ignore
+    query = sql.SQL(query_text).format(
+        sql.SQL(', ').join([sql.Identifier(col) for col in columns]),
+        sql.SQL(', ').join(sql.Placeholder() * len(columns)),
     )
     with conn.cursor() as cursor:
         insert_tuples = rows.values
@@ -76,6 +75,5 @@ class PostgresWriter(Processor):
 
     def close(self) -> None:
         if not self._closed:
-            # Looks like an issue in types-psycopg2
-            self._conn.close()                                                                            # type: ignore
+            self._conn.close()
             self._closed = True

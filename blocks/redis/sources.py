@@ -1,5 +1,5 @@
 import time
-from typing import List, Optional
+from typing import List, Optional, Dict, Type, Tuple
 from datetime import datetime, timedelta
 
 from redis import Redis
@@ -9,6 +9,28 @@ from blocks.types import Event, Source
 from blocks.logger import logger
 from blocks.redis.serdes import Deserializer, deserialize
 from blocks.redis.streams import InputStream
+
+
+def _make_events(deserialized: List[Dict[str, Optional[bytes]]], codec: Type[Event]) -> List[Event]:
+    events = []
+    for msg in deserialized:
+        try:
+            event = codec(**msg)
+        except TypeError as err:
+            # Although I think there is a better way to check if the input arguments are needed
+            if 'takes no arguments' in str(err):
+                event = codec()
+                for k, v in msg.items():
+                    if hasattr(event, k):
+                        setattr(event, k, v)
+                events.append(event)
+            logger.warning(err)
+        except ValidationError as err:
+            logger.warning(err)
+            logger.warning('Deserialized message: {0}'.format(deserialized))
+        else:
+            events.append(event)
+    return events
 
 
 class RedisConsumer(Source):
@@ -51,44 +73,46 @@ class RedisConsumer(Source):
 
         self.patch_annotations({stream.event for stream in streams})
 
-    # ToDo (tribunsky.kir): complexity? Author didn't even care about complexity.
+    @property
+    def _can_run(self) -> bool:
+        return (
+            self._last_call is None or
+            (datetime.now() - self._last_call) > timedelta(milliseconds=self._read_timeout)
+        )
+
     def __call__(self) -> List[Event]:
-        events = []
-        if self._last_call is None or (datetime.now() - self._last_call) > timedelta(milliseconds=self._read_timeout):
-            try:
-                all_data = self._client.xread(self._offsets, self._count)
-            except Exception as exc:
-                logger.error(exc)
-            else:
-                self._last_call = datetime.now()
-                for stream_name, msgs in all_data:
-                    for offset, message in msgs:
-                        filter_message = self._codecs[stream_name.decode()][1]
-                        deserialized = self._deserializer(message)
-                        codec = self._codecs[stream_name.decode()][0]
-                        try:
-                            event = codec(**deserialized)
-                        except TypeError as err:
-                            if 'takes no arguments' in str(err):
-                                event = codec()
-                                for k, v in deserialized.items():
-                                    if hasattr(event, k):
-                                        setattr(event, k, v)
-                                if filter_message(event):
-                                    events.append(event)
-                            logger.warning(err)
-                        except ValidationError as err:
-                            logger.warning(err)
-                            logger.warning('Deserialized message: {0}'.format(deserialized))
-                        else:
-                            if filter_message(event):
-                                events.append(event)
-                        self._offsets[stream_name] = offset
-        else:
-            to_sleep = timedelta(milliseconds=self._read_timeout) - (datetime.now() - self._last_call)
+        if not self._can_run:
+            to_sleep = timedelta(milliseconds=self._read_timeout) - (datetime.now() - self._last_call)  # type: ignore[operator]
             time.sleep(to_sleep.microseconds / 1000000)
+            return []
+
+        data = self._get_messages()
+        if data is None:
+            return []
+        self._last_call = datetime.now()
+
+        return self._unpack_messages(data)
+
+    def _get_messages(self) -> List[Tuple[bytes, List[Tuple[bytes, Dict[bytes, bytes]]]]]:
+        try:
+            return self._client.xread(self._offsets, self._count)
+        except Exception as exc:
+            logger.error(exc)
+        return []
+
+    def _unpack_messages(self, data: List[Tuple[bytes, List[Tuple[bytes, Dict[bytes, bytes]]]]]) -> List[Event]:
+        events = []
+        for stream, msgs in data:
+            codec, filter_msgs = self._codecs[stream.decode()]
+            deserialized = list(map(lambda x: self._deserializer(x[1]), msgs))
+
+            if filter_msgs is not None:
+                deserialized = list(filter(filter_msgs, deserialized))
+
+            events.extend(_make_events(deserialized, codec))
+            self._offsets[stream] = msgs[-1][0]
         return events
 
     def close(self) -> None:
-        """Graceful shutdown: close reids client."""
+        """Graceful shutdown: close redis client."""
         self._client.close()

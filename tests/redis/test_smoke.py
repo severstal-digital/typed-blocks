@@ -88,8 +88,8 @@ def test_smoke_event_creation(cls, client) -> None:
         assert events[i].value == approx(0.0023)
         assert events[i].flag is False
 
-def filter_1(value: BaseModel) -> bool:
-    return value.value > 0.0023
+def filter_1(msg: Dict[str, Optional[bytes]]) -> bool:
+    return float(msg['value'].decode()) > 0.0023
 
 
 def test_smoke_event_creation_filter(client) -> None:

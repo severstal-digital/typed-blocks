@@ -28,7 +28,7 @@ def _get_rows_or_table(conn: Connection, query: Query) -> Union[List[Row], Table
         logger.info(f'Executing query: {query.text}')
         cur.execute(query.text)
         logger.info('Validating')
-        keys = [col.name for col in cur.description]
+        keys = [col.name for col in cur.description]  # type: ignore[union-attr]
         fields = inspect.signature(row_codec).parameters
         fields_match = set(keys) == set(fields)
         if fields_match is False:
@@ -78,8 +78,7 @@ class PostgresReader(Source):
             with conn:
                 rows_or_tables = self._run_queries(conn)
         finally:
-            # Looks like an issue in types-psycopg2
-            conn.close()                                                                                  # type: ignore
+            conn.close()
         return rows_or_tables
 
     def _run_queries(self, conn: Any) -> List[Event]:

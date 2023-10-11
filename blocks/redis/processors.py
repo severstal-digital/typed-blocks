@@ -50,7 +50,7 @@ class RedisProducer(Processor):
     def __call__(self, event: Event) -> None:
         stream = self._streams[type(event)]
         serialized = self._serializer(event2dict(event))
-        self._client.xadd(stream.name, fields=serialized, maxlen=stream.max_len)
+        self._client.xadd(stream.name, fields=serialized, maxlen=stream.max_len)  # type: ignore[arg-type]
 
     def close(self) -> None:
         """Graceful shutdown: close reids client."""

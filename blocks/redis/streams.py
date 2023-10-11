@@ -19,7 +19,7 @@ class InputStream(_Stream):
         name: str,
         event: Type[Event],
         *,
-        filter_function: Callable[[Event], bool] = lambda x: True,
+        filter_function: Callable[[Dict[str, Optional[bytes]]], bool] = lambda x: True,
         start_id: str = f'{int(time.time() * 1000)}-0',
         messages_limit: int = 1000,
     ) -> None:

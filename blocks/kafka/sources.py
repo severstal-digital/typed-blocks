@@ -80,6 +80,9 @@ class KafkaSource(Source):
                 next_poll = []
                 messages = consumer.consume(topic.poll_timeout, topic.messages_limit, ignore_keys=topic.ignore_keys)
 
+            if messages and topic.filter_function is not None:
+                messages = list(filter(lambda m: topic.filter_function(m.value()), messages))  # type: ignore[arg-type]
+
             if topic.commit_regularly and messages:
                 # Not using CommitEvent as we close enough to consumer itself. R. Reliability. C. Consistency.
                 self._commit_messages[topic] = messages[-1]
@@ -172,13 +175,12 @@ def _make_events(
     events: List[Event] = []
     for msg in messages:
         event = cast(msg, topic.event, ignore_errors=ignore_errors, verbose_log_errors=topic.verbose_log_errors)
-        if topic.filter_function(event):
-            if event is not None:
-                if topic.commit_manually:
-                    # Do not know in advance which event should be committed.
-                    # So stashing necessary meta to every event from topics which may be committed manually.
-                    _stash_msg_meta(event, msg)
-                events.append(event)
+        if event is not None:
+            if topic.commit_manually:
+                # Do not know in advance which event should be committed.
+                # So stashing necessary meta to every event from topics which may be committed manually.
+                _stash_msg_meta(event, msg)
+            events.append(event)
 
     if topic.batched:
         if topic.batch_event is None:
