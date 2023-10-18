@@ -28,7 +28,10 @@ def _get_rows_or_table(conn: Connection, query: Query) -> Union[List[Row], Table
         logger.info(f'Executing query: {query.text}')
         cur.execute(query.text)
         logger.info('Validating')
-        keys = [col.name for col in cur.description]  # type: ignore[union-attr]
+        if cur.description is None:
+            # https://www.psycopg.org/docs/cursor.html#cursor.description
+            raise TypeError("Operation not return rows or cursor has not had an operation invoked")
+        keys = [col.name for col in cur.description]
         fields = inspect.signature(row_codec).parameters
         fields_match = set(keys) == set(fields)
         if fields_match is False:

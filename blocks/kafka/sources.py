@@ -81,7 +81,7 @@ class KafkaSource(Source):
                 messages = consumer.consume(topic.poll_timeout, topic.messages_limit, ignore_keys=topic.ignore_keys)
 
             if messages and topic.filter_function is not None:
-                messages = list(filter(lambda m: topic.filter_function(m.value()), messages))  # type: ignore[arg-type]
+                messages = [m for m in messages if topic.filter_function(m.value())]
 
             if topic.commit_regularly and messages:
                 # Not using CommitEvent as we close enough to consumer itself. R. Reliability. C. Consistency.
