@@ -2,9 +2,9 @@
 
 import datetime
 from enum import Enum
-from typing import Type, Optional, Callable, Dict
+from typing import Type, Optional, Callable, Dict, Any
 
-from wunderkafka import AnyConsumer, AnyProducer, ConsumerConfig, ProducerConfig
+from wunderkafka import AnyConsumer, AnyProducer, ConsumerConfig, ProducerConfig, Message
 
 from blocks.types import Event
 from blocks.logger import logger
@@ -136,7 +136,7 @@ class InputTopic(_Topic):
         name: str,
         event: Type[Event],
         *,
-        filter_function: Callable[[Event], bool] = lambda x: True,
+        filter_function: Optional[Callable[[Dict[str, Any]], bool]] = None,
         group_id: Optional[str] = None,
         key: Optional[Type[Event]] = None,
         commit_offset: str = 'never',

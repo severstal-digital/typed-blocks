@@ -67,5 +67,6 @@ types-psycopg2==2.9.21.14
 types-pyOpenSSL==23.2.0.2
 types-redis==4.6.0.7
 typing_extensions==4.8.0
-urllib3==1.26.13
+urllib3==2.0.6
+wheel==0.41.2
 wunderkafka==0.14.0
