@@ -4,7 +4,7 @@ from typing import Type, Optional, Sequence
 
 from blocks.graph import Graph
 from blocks.types import Block, Event
-from blocks.runners import Runner, AsyncRunner
+from blocks.runners import Runner, AsyncRunner, RestRunner
 from blocks.validation import validate_blocks
 
 
@@ -68,3 +68,21 @@ class App(object):
                                 specific conditions (such as terminal event) will occur.
         """
         await AsyncRunner(self._graph, self._terminal_event).run(interval=min_interval, once=once)
+
+    def run_rest(
+        self,
+        base_host_model: str,
+        input_rest_event: Type[Event],
+        output_rest_event: Type[Event],
+        *,
+        min_interval: float = 0.0,
+        collect_metric: bool = False
+    ) -> None:
+        RestRunner(
+            self._graph,
+            base_host_model,
+            input_rest_event,
+            output_rest_event,
+            self._terminal_event,
+            collect_metric=collect_metric
+        ).run(interval=min_interval, once=False)

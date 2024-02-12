@@ -1,15 +1,13 @@
 """Runners are actually runtime for statically built graph."""
 
 import time
-import asyncio
-import functools
 import traceback
-from typing import List, Type, Deque, Optional, Awaitable, DefaultDict, cast, Union
+from typing import List, Type, Deque, Optional, DefaultDict, cast
 from collections import deque
 from multiprocessing.pool import Pool
 
 from blocks.graph import Graph
-from blocks.types import Event, Source, Processor, AsyncSource, EventOrEvents, ParallelEvent, AsyncProcessor
+from blocks.types import Event, Source, Processor, EventOrEvents, ParallelEvent
 from blocks.logger import logger
 from blocks.types.base import is_named_tuple, AnyProcessors, AnyProcessor
 from blocks.metric_collector import MetricCollector, EventTime
@@ -20,6 +18,7 @@ SyncProcessors = DefaultDict[Type[Event], List[Processor]]
 def run_parallel_processor(payload: bytes) -> Optional[EventOrEvents]:
     event = ParallelEvent.decode(payload)
     return event.function(event.trigger)
+
 
 def get_processor_for_event(event: Event, processors: AnyProcessors) -> List[AnyProcessor]:
     type_event = type(event)
@@ -166,10 +165,10 @@ class Runner(object):
         return processor(input_event)
 
     def _process_events(self, input_event: Event) -> None:
-        for processor in get_processor_for_event(input_event, self._processors): # type: ignore[arg-type]
+        for processor in get_processor_for_event(input_event, self._processors):  # type: ignore[arg-type]
             logger.debug('Processor: {0} event: {1}'.format(processor, input_event))
             try:
-                output_event = self._run_processor(processor, input_event) # type: ignore[arg-type]
+                output_event = self._run_processor(processor, input_event)  # type: ignore[arg-type]
             except:
                 self.stop()
                 logger.error('Execution failed during processing the event: {0}({1}) {2}'.format(
@@ -198,121 +197,3 @@ class Runner(object):
             self._process_events(event)
             if self._collect_metric:
                 self._append_events(self._mp.get_aggregate_events())
-
-
-class AsyncRunner(object):
-    """Same as Runner, but for async/await syntax."""
-
-    def __init__(self, graph: Graph, terminal_event: Optional[Type[Event]]) -> None:
-        """
-        Init async runner instance.
-
-        :param graph:           Computational graph to execute.
-        :param terminal_event:  Special event which simply stops execution, when processed.
-        """
-        self._sources = graph.sources
-        self._processors = graph.processors
-        self._q: Deque[Event] = deque()
-        self._alive = True
-        self._terminal_event = terminal_event
-
-    async def run(self, interval: float, once: bool) -> None:
-        """
-        Start execution.
-
-        :param interval:        Minimal timeout (seconds) between repetition of the whole computational sequence.
-        :param once:            If True, executes the whole computational sequence only once, otherwise won't stop until
-                                specific conditions (such as terminal event) will occur.
-        """
-        await self._tick()
-        if not once:
-            while self._alive:
-                start = time.perf_counter()
-                await self._tick()
-                delta = time.perf_counter() - start - interval
-                if delta < 0:
-                    await asyncio.sleep(abs(delta))
-        await self._close_resources()
-
-    def stop(self) -> None:
-        """Stop the execution."""
-        self._alive = False
-
-    def _append_event(self, event: Event) -> None:
-        if not self._is_terminal_event(event):
-            self._q.append(event)
-
-    def _append_events(self, events: Optional[EventOrEvents]) -> None:
-        if events is None:
-            return None
-        elif is_named_tuple(events):
-            self._append_event(events)
-        elif isinstance(events, (list, tuple)):
-            for event in events:
-                self._append_event(event)
-        else:
-            self._append_event(events)
-
-    def _is_terminal_event(self, event: Event) -> bool:
-        if self._terminal_event is not None and isinstance(event, self._terminal_event):
-            self.stop()
-            return True
-        return False
-
-    async def _close_resources(self) -> None:
-        await self._close_sources()
-        await self._close_processors()
-
-    async def _close_processors(self) -> None:
-        closed = set()
-        for processors in self._processors.values():
-            for processor in processors:
-                identifier = id(processor)
-                if identifier not in closed:
-                    if isinstance(processor, AsyncProcessor):
-                        await processor.close()
-                    else:
-                        processor.close()
-                    closed.add(identifier)
-
-    async def _close_sources(self) -> None:
-        for source in self._sources:
-            if isinstance(source, AsyncSource):
-                await source.close()
-            else:
-                source.close()
-
-    async def _get_new_events(self) -> None:
-        tasks = []
-        loop = asyncio.get_running_loop()
-        for source in self._sources:
-            if isinstance(source, AsyncSource):
-                task: Awaitable[EventOrEvents] = loop.create_task(source())
-            else:
-                task = loop.run_in_executor(None, source)
-            tasks.append(task)
-        for events in await asyncio.gather(*tasks):
-            self._append_events(events)
-
-    async def _process_events(self) -> None:
-        loop = asyncio.get_running_loop()
-        tasks = []
-        while self._q:
-            event = self._q.popleft()
-            for processor in get_processor_for_event(event, self._processors):
-                if isinstance(processor, AsyncProcessor):
-                    task: Awaitable[EventOrEvents] = loop.create_task(processor(event))
-                else:
-                    prepared = functools.partial(processor, event)
-                    task = loop.run_in_executor(None, prepared)
-                tasks.append(task)
-
-        for events in await asyncio.gather(*tasks):
-            self._append_events(events)
-
-        if self._q:
-            await self._process_events()
-
-    async def _tick(self) -> None:
-        await self._get_new_events()
-        await self._process_events()
