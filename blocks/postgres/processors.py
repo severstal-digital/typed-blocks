@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union, Callable
+from typing import List, Union, Callable
 
 from psycopg2 import sql
 
