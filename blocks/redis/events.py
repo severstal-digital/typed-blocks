@@ -1,4 +1,5 @@
-from typing import Any, Dict
+from _typeshed import DataclassInstance
+from typing import Any, Dict, Union
 from dataclasses import asdict, is_dataclass
 
 from blocks.types import Event
@@ -8,7 +9,9 @@ if HAS_PYDANTIC:
     from pydantic import BaseModel
 
 
-def event2dict(event: Any) -> Dict[str, Any]:
+def event2dict(
+        event: Union[DataclassInstance, BaseModel, Event, Any]
+) -> Dict[str, Any]:
     if HAS_PYDANTIC is True:
         if isinstance(event, BaseModel):
             return event.dict()

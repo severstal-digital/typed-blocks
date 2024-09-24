@@ -3,14 +3,10 @@ from typing import Type, Optional
 from pydantic import BaseModel
 
 
-class InputUrl:
-    def __init__(self,
-                 url: str,
-                 event: Type[BaseModel],
-                 timeout: float = 5.0) -> None:
-        self.url = url
-        self.event = event
-        self.timeout = timeout
+class InputUrl(BaseModel):
+    url: str
+    event: Type[BaseModel]
+    timeout: float = 5.0
 
 
 class OutputUrl:
