@@ -73,3 +73,11 @@ def test_graphviz_visualization() -> None:
     graph.save_visualization(rendering_type=RenderingKernelType.graphviz)
     assert os.path.exists('DAG.svg')
 
+def test_graphviz_node_list() -> None:
+    blocks = (FastKafkaConsumerMessages(), ConsumerMeta(), MapperSize(), Predictor())
+    graph = Graph(blocks)
+    blocks_in_graph = graph.blocks
+    for block in blocks:
+        assert block in blocks_in_graph
+    assert len(graph.blocks) == len(blocks)
+
