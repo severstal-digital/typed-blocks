@@ -21,17 +21,14 @@ def run_parallel_processor(payload: bytes) -> Optional[EventOrEvents]:
     event = ParallelEvent.decode(payload)
     return event.function(event.trigger)
 
-def get_processor_for_event(event: Event, processors: AnyProcessors) -> \
-        List[AnyProcessor]:
+def get_processor_for_event(event: Event, processors: AnyProcessors) -> List[AnyProcessor]:
     type_event = type(event)
     if type_event in processors:
         return processors[type_event]
-    else:
-        for inheritance in type_event.__mro__:
-            if inheritance in processors:
-                processors[type_event] = processors[inheritance]
-                return processors[inheritance]
-        raise KeyError("Processors not found")
+    for inheritance in type_event.__mro__:
+        if inheritance in processors:
+            processors[type_event] = processors[inheritance]
+    return processors[type_event]
 
 
 class Runner(object):

@@ -103,7 +103,7 @@ class Graph(object):
     @property
     def blocks(self) -> List[Block]:
         list_of_lists = [lst for lst in self.processors.values()]
-        processors: List[Block] = [item for sublist in list_of_lists for item in sublist]
+        processors: List[Block] = list({item for sublist in list_of_lists for item in sublist})
         sources: List[Block] = list(self.sources)
         blocks = processors + sources
         return blocks
