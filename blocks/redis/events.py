@@ -1,5 +1,5 @@
 from typing import Any, Dict
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, is_dataclass, dataclass
 
 from blocks.types import Event
 from blocks.compat import HAS_PYDANTIC
@@ -17,7 +17,7 @@ def event2dict(event: Any) -> Dict[str, Any]:
         if callable(method):
             return event.dict()
     if is_dataclass(event):
-        return asdict(event)
+        return asdict(event)  # type:ignore[call-overload]
     if isinstance(event, Event):
         return {attr: getattr(event, attr) for attr in dir(event) if not attr.startswith('__')}
     raise RuntimeError('Unable to treat event as dict: {0} (type: {1})'.format(event, type(event)))
