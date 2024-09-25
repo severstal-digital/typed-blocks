@@ -7,9 +7,6 @@ from blocks.compat import HAS_PYDANTIC
 if HAS_PYDANTIC:
     from pydantic import BaseModel
 
-@dataclass
-class DataClass:
-    x: int
 
 def event2dict(event: Any) -> Dict[str, Any]:
     if HAS_PYDANTIC is True:
