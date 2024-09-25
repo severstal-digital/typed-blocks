@@ -43,7 +43,7 @@ pydantic==2.4.2
 pydantic-settings==2.0.3
 pydantic_core==2.10.1
 PyHive==0.7.0
-pymssql==2.2.9
+pymssql==2.3.1
 pyparsing==3.0.9
 pyspnego==0.6.3
 pytest==7.4.2
