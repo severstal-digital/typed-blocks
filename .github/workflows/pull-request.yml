@@ -39,7 +39,7 @@ jobs:
     - name: Install packages
       run: |
         apt-get update
-        apt-get install -y gcc g++ libsasl2-dev python3-dev
+        apt-get install -y gcc g++ libsasl2-dev
     - name: Setup pytest
       run: python -m pip install pytest
     - name: Install graphviz package
