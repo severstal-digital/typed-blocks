@@ -55,7 +55,7 @@ pytz
 redis
 requests
 requests-kerberos
-sasl
+sasl --only-binary :all:
 schedule
 six
 stringcase
