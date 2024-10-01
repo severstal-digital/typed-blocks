@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.9', '3.10', '3.11' ]
+        python-version: [ '3.9', '3.10', '3.11', '3.12' ]
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -31,11 +31,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.9', '3.10', '3.11' ]
-    container: severstaldigital/python-librdkafka:${{ matrix.python-version }}-librdkafka-1.6.0-v0.5
+        python-version: [ '3.9', '3.10', '3.11', '3.12' ]
+    container: severstaldigital/python-librdkafka:${{ matrix.python-version }}-librdkafka-1.6.0-v0.6
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+    - name: Install packages
+      run: |
+        apt-get update
+        apt-get install -y gcc g++ libsasl2-dev sasl2-bin
     - name: Setup pytest
       run: python -m pip install pytest
     - name: Install graphviz package

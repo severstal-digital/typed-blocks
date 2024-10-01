@@ -6,7 +6,7 @@ from blocks.annotations import get_output_events_type
 from blocks.compat import HAS_PYDANTIC
 
 if sys.version_info >= (3, 8):
-    from typing import Protocol, Union
+    from typing import Protocol
 else:
     from typing_extensions import Protocol
 
@@ -146,8 +146,8 @@ def test_smoke_event_creation(cls) -> None:
     assert all(isinstance(event, cls) for event in events)
 
 
-def filter_func(value: Union[SignalNT, SignalO, SignalOI, SignalDC]) -> bool:
-    return value.value >= 10000
+def filter_func(msg: Dict[str, Any]) -> bool:
+    return msg['value'] >= 10000
 
 @pytest.mark.parametrize('cls', (SignalNT, SignalOI, SignalDC))
 def test_smoke_event_creation_filter(cls) -> None:
