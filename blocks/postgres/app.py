@@ -2,6 +2,7 @@ from typing import List, Type, Callable, Optional, Sequence
 
 from blocks import App, Event, Runner, Processor, Block
 from blocks.db import Query
+from blocks.logger import logger
 from blocks.validation import validate_blocks
 from blocks.postgres.sources import PostgresReader
 from blocks.postgres.protocols import Connection
@@ -51,6 +52,12 @@ class PostgresApp(App):
         *,
         metric_time_interval: int = 60
     ) -> None:
+        logger.warn(
+            "This method of using a connection to postgresql is deprecated "
+            "and will be removed in version 0.20.0. "
+            "Use the current version by `from blocks.psql.app import PsqlApp`.",
+            DeprecationWarning
+        )
         super().__init__(
             blocks=[],
             terminal_event=terminal_event,
